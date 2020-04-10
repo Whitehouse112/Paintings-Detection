@@ -5,15 +5,19 @@ import matplotlib.pyplot as plt
 video = cv2.VideoCapture('VIRB0392.MP4')
 
 _, frame = video.read()
-img = np.array(frame[:,:,::-1])
-edge = cv2.Canny(img, 160, 320)
+frame = np.swapaxes(np.swapaxes(frame, 0, 2), 1, 2)  # (3, H, W)
+frame = np.array(frame[::-1, :, :])  # from BGR to RGB
 
-cont, _ = cv2.findContours(edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+edge = cv2.Canny(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), 50, 400)
+contours, hierarchy = cv2.findContours(edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-for c in cont:
+maxH, maxW, maxX, maxY = None, None, None, None
+for c in contours:
     x, y, w, h = cv2.boundingRect(c)
-    #if w > 200 and h > 400:
-    cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+    if maxH is None or (h * w / 2) > (maxH * maxW / 2):
+        maxH, maxW, maxX, maxY = h, w, x, y
 
-plt.imshow(img)
+cv2.rectangle(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), (maxX, maxY), (maxX + maxW, maxY + maxH), (0, 255, 0), 2)
+
+plt.imshow(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2))
 plt.show()
