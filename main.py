@@ -2,9 +2,9 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-video = cv2.VideoCapture('VIRB0392.MP4')  # folder 000
+# video = cv2.VideoCapture('VIRB0392.MP4')  # folder 000
 # video = cv2.VideoCapture('VIRB0407.MP4')  # folder 000
-# video = cv2.VideoCapture('GOPR5826.MP4')  # folder 001
+video = cv2.VideoCapture('GOPR5826.MP4')  # folder 001
 
 n_frame = 0
 frame_entr = 6.5
