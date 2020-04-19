@@ -1,21 +1,16 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
-# video = cv2.VideoCapture('VIRB0392.MP4')  # folder 000
-# video = cv2.VideoCapture('VIRB0407.MP4')  # folder 000
-video = cv2.VideoCapture('GOPR5826.MP4')  # folder 001
+# video = cv2.VideoCapture('VIRB0392.MP4')    # folder 000
+# video = cv2.VideoCapture('VIRB0407.MP4')    # folder 000
+video = cv2.VideoCapture('GOPR5826.MP4')    # folder 001
+if not video.isOpened():
+    print("File not found.")
 
-n_frame = 0
 frame_entr = 6.5
-while video.isOpened():
-    ret, frame = video.read()
-    if ret is False:
-        break
-    frame = np.swapaxes(np.swapaxes(frame, 0, 2), 1, 2)  # (3, H, W)
-    # frame = np.array(frame[::-1, :, :])  # from BGR to RGB
-    n_frame += 1
-    print("\nFrame", n_frame)
+while video.grab():
+    _, frame = video.retrieve()
+    frame = np.swapaxes(np.swapaxes(frame, 0, 2), 1, 2)     # (3, H, W)
 
     # Edge detection
     edges = cv2.Canny(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), 10, 2000, apertureSize=5, L2gradient=True)
@@ -46,13 +41,12 @@ while video.isOpened():
     cv2.drawContours(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), contours, -1, (0, 255, 0), thickness=2)
     img_contours = cv2.cvtColor(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)
 
-    
     # Bounding boxes/ROIs
     entropies = [frame_entr]
+    out = []    # roi list
     for cont in contours:
         x, y, w, h = cv2.boundingRect(cont)
         if w > 100 and h > 100:
-
             roi = cv2.cvtColor(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)[y:y + h, x:x + w]
 
             histo = np.float32((np.bincount(roi.ravel(), minlength=256)))
@@ -60,18 +54,25 @@ while video.isOpened():
             histo /= np.sum(histo)
 
             entropy = -np.sum(histo * np.log2(histo))
-            
+
             if entropy > frame_entr - 0.5:
                 entropies.append(entropy)
-                print(entropy, frame_entr)
-                cv2.rectangle(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), (x, y), (x + w, y + h), (0, 255, 0), thickness=2)
-                print((x, y, w, h))
+                out.append((x, y, w, h))
+                cv2.rectangle(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), (x, y), (x + w, y + h), (0, 255, 0),
+                              thickness=2)
     frame_entr = np.sum(entropies) / len(entropies)
+    print("entropies = ", entropies)
 
-    horizontal_concat_1 = np.concatenate((cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB), cv2.cvtColor(img_lines, cv2.COLOR_GRAY2RGB)), axis=1)
-    horizontal_concat_2 = np.concatenate((cv2.cvtColor(img_contours, cv2.COLOR_GRAY2RGB), np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2)), axis=1)
+    # Show results
+    print(out)
+    horizontal_concat_1 = np.concatenate(
+        (cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB), cv2.cvtColor(img_lines, cv2.COLOR_GRAY2RGB)), axis=1)
+    horizontal_concat_2 = np.concatenate(
+        (cv2.cvtColor(img_contours, cv2.COLOR_GRAY2RGB), np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2)), axis=1)
     vertical_concat = np.concatenate((horizontal_concat_1, horizontal_concat_2), axis=0)
-    cv2.imshow('ROIs', cv2.resize(vertical_concat, (1920,1080)))
+    cv2.imshow('ROIs', cv2.resize(vertical_concat, (1920, 1080)))
+
+    # Delay & escape-key
     if cv2.waitKey(1) == ord('q'):
         break
 

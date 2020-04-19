@@ -1,5 +1,6 @@
 .idea/
-.vscode/settings.json
+.vscode/
+.pylintrc
 VIRB0407.MP4
 VIRB0392.MP4
 GOPR5826.MP4
