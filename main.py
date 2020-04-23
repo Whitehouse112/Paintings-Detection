@@ -32,11 +32,11 @@ while video.grab():
     cv2.drawContours(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), contours, -1, (0, 255, 0), thickness=2)
     img_contours = cv2.cvtColor(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)
 
-    # Bounding boxes/ROIs
+    # Compute ROIs
     entropies = [frame_entr]
     out = []    # roi list
     for cont in contours:
-        x, y, w, h = cv2.boundingRect(cont)
+        x, y, w, h = cv2.boundingRect(cont)     # Bounding boxes
         if w > 100 and h > 100:
             roi = cv2.cvtColor(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)[y:y + h, x:x + w]
 

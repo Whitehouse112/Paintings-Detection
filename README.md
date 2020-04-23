@@ -3,9 +3,14 @@ Final project for Vision and Cognitive System
 
 ## Pipeline
 
-(actual) Painting detection:
+Painting detection:
 
-1. Edge Detection with Canny
-2. Hough transform to find border lines
-3. Compute bounding boxes
-4. Print ROI for each painting of each frame
+1. Gaussian Blurring
+2. Edge Detection with Sobel
+3. Closing Morphqology Transformation
+4. Significant Contours
+5. Compute ROIs
+   - Bounding Boxes
+   - Histogram
+   - Entropy
+   - Frame-Average Entropy Threshold
