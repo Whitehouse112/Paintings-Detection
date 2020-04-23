@@ -13,31 +13,21 @@ while video.grab():
     _, frame = video.retrieve()
     frame = np.swapaxes(np.swapaxes(frame, 0, 2), 1, 2)     # (3, H, W)
 
-    # Edge detection
-    edges = cv2.Canny(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), 10, 2000, apertureSize=5, L2gradient=True)
+    # Blurring
+    gray = cv2.cvtColor(np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Morphqology transformation (closing)
-    edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, (3, 3), iterations=1)
+    # Sobel edge detection
+    grad_x = cv2.Sobel(blurred, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(blurred, cv2.CV_32F, 0, 1, ksize=3)
+    mag = cv2.magnitude(grad_x, grad_y)
+    edges = np.uint8(mag > 15) * 255
 
-    # Significant contours
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    img_contours = np.zeros_like(frame)
-    cv2.drawContours(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), contours, -1, (0, 255, 0), thickness=2)
-
-    # Probabilistic Hough transform to find line segments
-    img_contours = cv2.cvtColor(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)
-    lines = cv2.HoughLinesP(img_contours, 1, np.pi / 180, 100, minLineLength=20, maxLineGap=10)
-    img_lines = np.zeros_like(frame)
-    for line in lines[:, 0]:
-        x1, y1, x2, y2 = line[0], line[1], line[2], line[3]
-        cv2.line(np.swapaxes(np.swapaxes(img_lines, 0, 1), 1, 2), (x1, y1), (x2, y2), (0, 255, 0), thickness=2)
-
-    # Morphology transformation (closing)
-    img_lines = cv2.cvtColor(np.swapaxes(np.swapaxes(img_lines, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)
-    img_lines = cv2.morphologyEx(img_lines, cv2.MORPH_CLOSE, (3, 3), iterations=2)
+    # Morphqology transformations
+    closing = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, (3, 3), iterations=1)
 
     # Significant contours
-    contours, _ = cv2.findContours(img_lines, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), contours, -1, (0, 255, 0), thickness=2)
     img_contours = cv2.cvtColor(np.swapaxes(np.swapaxes(img_contours, 0, 1), 1, 2), cv2.COLOR_RGB2GRAY)
@@ -67,7 +57,7 @@ while video.grab():
     # Show results
     print(out)
     horizontal_concat_1 = np.concatenate(
-        (cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB), cv2.cvtColor(img_lines, cv2.COLOR_GRAY2RGB)), axis=1)
+        (cv2.cvtColor(blurred, cv2.COLOR_GRAY2RGB), cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)), axis=1)
     horizontal_concat_2 = np.concatenate(
         (cv2.cvtColor(img_contours, cv2.COLOR_GRAY2RGB), np.swapaxes(np.swapaxes(frame, 0, 1), 1, 2)), axis=1)
     vertical_concat = np.concatenate((horizontal_concat_1, horizontal_concat_2), axis=0)
