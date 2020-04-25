@@ -16,7 +16,7 @@ def checkDims(_w, _h):
 video_name = 'VIRB0392.MP4'     # folder 000
 # video_name = 'VIRB0407.MP4'     # folder 000
 # video_name = 'GOPR5826.MP4'     # folder 001
-video = cv2.VideoCapture(video_name)
+video = cv2.VideoCapture('videos/' + video_name)
 if not video.isOpened():
     print("File not found.")
 
@@ -58,7 +58,7 @@ while video.grab():
             histo /= np.sum(histo)
 
             entropy = -np.sum(histo * np.log2(histo))
-            print(entropy)
+            
             if entropy > frame_entr - 0.2:
                 entropies.append(entropy)
                 out.append((x, y, w, h))
