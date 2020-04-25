@@ -7,7 +7,7 @@ Painting detection:
 
 1. Gaussian Blurring
 2. Edge Detection with Sobel
-3. Closing Morphqology Transformation
+3. Morphology Transformations
 4. Significant Contours
 5. Compute ROIs
    - Bounding Boxes
