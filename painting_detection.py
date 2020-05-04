@@ -1,13 +1,34 @@
 import numpy as np
 import cv2
+import os
 
 
-# frame_entr = 7
-frame_entr = 15
+base_hist = None
 
 
-def HW3(img):
-    return np.swapaxes(np.swapaxes(img, 0, 1), 1, 2)
+def HW3(image):
+    return np.swapaxes(np.swapaxes(image, 0, 1), 1, 2)
+
+
+def init():
+    global base_hist
+
+    n = len([name for name in os.listdir('photos/')])
+    for i in range(1, n + 1):
+        img = cv2.imread("photos/" + str(i) + ".png")
+        img = np.swapaxes(np.swapaxes(img, 0, 2), 1, 2)  # (3, H, W)
+
+        mask = np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8)
+        every = img.shape[1] // 11
+        for j in range(1, 10):
+            mask[j * every, :] = 255
+
+        hist = cv2.calcHist([HW3(img)], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+        if i == 1:
+            base_hist = hist
+        else:
+            base_hist += hist
+    base_hist /= n
 
 
 def checkDims(_w, _h):
@@ -20,86 +41,91 @@ def checkDims(_w, _h):
     return True
 
 
-def detect_paintings(frame):
-    global frame_entr
-    tmp = np.array(frame)
+def histogram_distance(roi):
+    global base_hist
 
+    mask = np.zeros((roi.shape[1], roi.shape[2]), dtype=np.uint8)
+    every = roi.shape[1] // 11
+    for i in range(1, 10):
+        mask[i * every, :] = 255
+
+    hist = cv2.calcHist([HW3(roi)], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+    retval = cv2.compareHist(base_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
+    similarity = 1 - retval
+    # print(similarity)
+    return similarity
+
+
+def discard_inner_rectangles(roi_list, box):
+    x, y, w, h = box
+    find = False
+    restart = True
+    while restart:
+        restart = False
+        for rect in roi_list:
+            # nuovo è contenuto in uno già esistente
+            if x >= rect[0] and y >= rect[1] and x + w < rect[0] + rect[2] and y + h < rect[1] + rect[3]:
+                find = True
+                break
+            # uno già esistente è più piccolo di uno nuovo
+            if rect[0] >= x and rect[1] >= y and rect[0] + rect[2] <= x + w and rect[1] + rect[3] <= y + h:
+                roi_list.remove(rect)
+                restart = True
+            if restart is True:
+                break
+    return find, roi_list
+
+
+def detect_paintings(frame):
     # Blurring
     gray = cv2.cvtColor(HW3(frame), cv2.COLOR_RGB2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-    # Sobel edge detection
+    # Edge detection with Sobel
     grad_x = cv2.Sobel(blur, cv2.CV_32F, 1, 0, ksize=3)
     grad_y = cv2.Sobel(blur, cv2.CV_32F, 0, 1, ksize=3)
     mag = cv2.magnitude(grad_x, grad_y)
     edges = np.uint8(mag > 15) * 255
 
-    # Morphology transformations
-    morph = cv2.morphologyEx(edges, cv2.MORPH_OPEN, (3, 3), iterations=3)
-
     # Significant contours
-    contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(HW3(img_contours), contours, -1, (0, 255, 0), thickness=2)
     img_contours = cv2.cvtColor(HW3(img_contours), cv2.COLOR_RGB2GRAY)
 
-    # Compute ROI
-    entropies = [frame_entr]
+    # Morphology transformations
+    img_contours = cv2.morphologyEx(img_contours, cv2.MORPH_ERODE, (3, 3), iterations=2)
+    img_contours = cv2.morphologyEx(img_contours, cv2.MORPH_CLOSE, (3, 3), iterations=5)
+
+    # Significant contours
+    contours, _ = cv2.findContours(img_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    img_contours = np.zeros_like(frame)
+    cv2.drawContours(HW3(img_contours), contours, -1, (0, 255, 0), thickness=2)
+    # img_contours = cv2.cvtColor(HW3(img_contours), cv2.COLOR_RGB2GRAY)
+
+    # Discard false positives
     roi_list = []
     for cont in contours:
         x, y, w, h = cv2.boundingRect(cont)  # Bounding boxes
-        if checkDims(w, h):
-            roi = frame[:, y:y + h, x:x + w]
+        box = (x, y, w, h)
+        if not checkDims(w, h):
+            continue
 
-            roi_unrolled = np.concatenate((roi[0], roi[1], roi[2]), axis=None)
-            av_color = int(np.sum(roi_unrolled) / len(roi_unrolled))
-            print(av_color)
+        # Histogram distance
+        roi = frame[:, y:y + h, x:x + w]
+        similarity = histogram_distance(roi)
+        if similarity < 0.3:
+            continue
+        # cv2.imwrite('/home/lorenzo/cvcs/image.png', HW3(roi))
 
-            roi_gray = cv2.cvtColor(HW3(roi), cv2.COLOR_RGB2GRAY)
-            roi_gray_unrolled = np.concatenate(roi_gray, axis=None)
-            roi_gray_unrolled += 1
-            roi_norm = roi_gray_unrolled / np.sum(roi_gray_unrolled)
-            roi_norm += 0.00000001e-05
-            entropy = -np.sum(roi_norm * np.log2(roi_norm))
-            print(entropy)
+        # Discard inner rectangles
+        ret, roi_list = discard_inner_rectangles(roi_list, box)
+        if ret is False:
+            roi_list.append((x, y, w, h))
 
-            # histo = np.float32((np.bincount(roi_unrolled, minlength=256 * 3)))
-            # histo += 1
-            # histo /= np.sum(histo)
-            # entropy = -np.sum(histo * np.log2(histo))
-
-            # if entropy > frame_entr - 0.35:
-            if entropy > frame_entr - 1.5 and av_color < 105:
-                # Discard inner rectangles
-                find = False
-                restart = True
-                while restart:
-                    restart = False
-                    for rect in roi_list:
-                        # nuovo è contenuto in uno già esistente
-                        if x >= rect[0] and y >= rect[1] and x + w < rect[0] + rect[2] and y + h < rect[1] + rect[3]:
-                            find = True
-                            break
-                        # uno già esistente è più piccolo di uno nuovo
-                        if rect[0] >= x and rect[1] >= y and rect[0] + rect[2] <= x + w and rect[1] + rect[3] <= y + h:
-                            roi_list.remove(rect)
-                            restart = True
-                if find is False:
-                    roi_list.append((x, y, w, h))
-                    entropies.append(entropy)
-
+    roi_frame = np.array(frame)
     for rect in roi_list:
-        cv2.rectangle(HW3(tmp), (int(rect[0]), int(rect[1])), (int(rect[0] + rect[2]), int(rect[1] + rect[3])), (0, 255, 0), thickness=2)
-    frame_entr = np.sum(entropies) / len(entropies)
-    print("entropies = ", entropies)
+        cv2.rectangle(HW3(roi_frame), (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0),
+                      thickness=2)
 
-    # Show results
-    # print(out)
-    # horizontal_concat_1 = np.concatenate(
-    #     (cv2.cvtColor(blur, cv2.COLOR_GRAY2RGB), cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)), axis=1)
-    # horizontal_concat_2 = np.concatenate(
-    #     (cv2.cvtColor(img_contours, cv2.COLOR_GRAY2RGB), HW3(frame)), axis=1)
-    # vertical_concat = np.concatenate((horizontal_concat_1, horizontal_concat_2), axis=0)
-    # cv2.imshow('ROIs', cv2.resize(vertical_concat, (1280, 720)))
-
-    return roi_list, tmp, img_contours
+    return roi_list, roi_frame
