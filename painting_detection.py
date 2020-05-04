@@ -22,6 +22,7 @@ def checkDims(_w, _h):
 
 def detect_paintings(frame):
     global frame_entr
+    tmp = np.array(frame)
 
     # Blurring
     gray = cv2.cvtColor(HW3(frame), cv2.COLOR_RGB2GRAY)
@@ -40,7 +41,7 @@ def detect_paintings(frame):
     contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(HW3(img_contours), contours, -1, (0, 255, 0), thickness=2)
-    # img_contours = cv2.cvtColor(HW3(img_contours), cv2.COLOR_RGB2GRAY)
+    img_contours = cv2.cvtColor(HW3(img_contours), cv2.COLOR_RGB2GRAY)
 
     # Compute ROI
     entropies = [frame_entr]
@@ -88,7 +89,7 @@ def detect_paintings(frame):
                     entropies.append(entropy)
 
     for rect in roi_list:
-        cv2.rectangle(HW3(frame), (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0), thickness=2)
+        cv2.rectangle(HW3(tmp), (int(rect[0]), int(rect[1])), (int(rect[0] + rect[2]), int(rect[1] + rect[3])), (0, 255, 0), thickness=2)
     frame_entr = np.sum(entropies) / len(entropies)
     print("entropies = ", entropies)
 
@@ -101,5 +102,4 @@ def detect_paintings(frame):
     # vertical_concat = np.concatenate((horizontal_concat_1, horizontal_concat_2), axis=0)
     # cv2.imshow('ROIs', cv2.resize(vertical_concat, (1280, 720)))
 
-    return roi_list, frame
-    # return roi_list, img_contours
+    return roi_list, tmp, img_contours
