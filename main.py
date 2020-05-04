@@ -25,7 +25,7 @@ while video.grab():
 
     # Delay & escape-key
     # video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS) / 2))
-    if cv2.waitKey(125) == ord('q'):
+    if cv2.waitKey(50) == ord('q'):
         break
 
 video.release()
