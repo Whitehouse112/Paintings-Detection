@@ -17,7 +17,7 @@ while video.grab():
     print("Frame", int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1)
 
     roi_list, cont_list = detect_paintings(np.array(frame))
-    poly_list = rectify_paintings(cont_list, np.array(frame))
+    rectify_paintings(cont_list, np.array(frame))
     # poly_list = rectify_paintings(cont_list)
     # paintings = cropROI(HW3(frame), roi_list)
     
@@ -27,8 +27,10 @@ while video.grab():
     # for painting in paintings:
     #     cv2.imshow('Segmentation', painting)
 
+    cv2.imshow("Video", HW3(frame))
+
     # Delay & escape-key
-    video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
+    #video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
     if cv2.waitKey(50) == ord('q'):
         break
 

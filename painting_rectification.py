@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 from utility import HW3
 
-
 # refactor di cropROI
 def segmentation(frame, roi_list):
     paintings = []
@@ -28,7 +27,6 @@ def segmentation(frame, roi_list):
         paintings.append(painting)
 
     return paintings
-
 
 def find_intersections(lines):
     horizontals = []
@@ -56,7 +54,6 @@ def find_intersections(lines):
             intersections.append([[x0, y0]])
     return intersections
 
-
 # def rectify_paintings(cont_list):
 #     poly_list = []
 #     for contour in cont_list:
@@ -67,24 +64,45 @@ def find_intersections(lines):
 #
 #     return poly_list
 
-
 def rectify_paintings(cont_list, frame):
-    for idx, contour in enumerate(cont_list):
+    for _, contour in enumerate(cont_list):
         hull = cv2.convexHull(contour)
         img_hull = np.zeros_like(frame)
         cv2.drawContours(HW3(img_hull), [hull], -1, (0, 255, 0), thickness=2)
         img_hull = cv2.cvtColor(HW3(img_hull), cv2.COLOR_RGB2GRAY)
-
         lines = cv2.HoughLines(img_hull, 1, np.pi / 180, 200)
 
+        if lines is None:
+            continue
         intersections = np.array(find_intersections(lines)).astype(np.float32)
 
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        _, _, centers = cv2.kmeans(intersections, 4, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-        centers = np.array(np.expand_dims(centers, axis=1)).astype(np.int)
+        #N of intersection must be greater than K (number of cluster)
+        if len(intersections) >= 4:
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+            _, _, centers = cv2.kmeans(intersections, 4, None, criteria, 20, cv2.KMEANS_RANDOM_CENTERS)
+            centers = np.array(np.expand_dims(centers, axis=1)).astype(np.int)
+        else:
+            continue
 
-        # cercare i due lati più lunghi per creare la nuova figura
-        # proiettare
+        # order centers: bottom-left, top-left, bottom-right, top-right       
+        dt = [('x', centers.dtype),('y', centers.dtype)]
+        assert centers.flags['C_CONTIGUOUS']
+        order = centers.ravel().view(dt)
+        order.sort(order=['x','y'])
+        
+        x1 = centers[:,0][0]
+        x2 = centers[:,0][1]
+        x3 = centers[:,0][2]
+        x4 = centers[:,0][3]
+
+        # bottom-left, top-left, bottom-right, top-right
+        pts_dst = np.array([(0, 510),(0,0),(510,510),(510,0)])
+        pts_src = np.array([x1,x2,x3,x4])
+        
+        #rectification
+        H,_ = cv2.findHomography(pts_src, pts_dst)
+        rect = cv2.warpPerspective(HW3(frame), H, (510, 510))
+        cv2.imshow("Rectified", rect)
 
         # draw
         img_lines = np.zeros_like(frame)
