@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import os
-from utility import HW3
+from utility import hw3
 
 
 base_hist = None
@@ -14,7 +14,7 @@ def compute_histogram(img, stripes=10):
     for i in range(1, stripes + 1):
         mask[i * every, :] = 255
 
-    hist = cv2.calcHist([HW3(img)], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+    hist = cv2.calcHist([hw3(img)], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
     return hist
 
 
@@ -45,7 +45,7 @@ def edge_detection(img):
     return edges
 
 
-def checkDims(_w, _h):
+def check_dims(_w, _h):
     if _w < 100 or _h < 100:
         return False
     if _w >= 1500 or _h > 1080:
@@ -92,7 +92,7 @@ def discard_false_positives(frame, contours):
     for cont in contours:
         x, y, w, h = cv2.boundingRect(cont)  # Bounding boxes
         box = (x, y, w, h)
-        if not checkDims(w, h):
+        if not check_dims(w, h):
             continue
 
         # Histogram distance
@@ -115,7 +115,7 @@ def discard_false_positives(frame, contours):
 
 def detect_paintings(frame):
     # Blurring
-    gray = cv2.cvtColor(HW3(frame), cv2.COLOR_RGB2GRAY)
+    gray = cv2.cvtColor(hw3(frame), cv2.COLOR_RGB2GRAY)
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
     edges = edge_detection(blur)
@@ -123,8 +123,8 @@ def detect_paintings(frame):
     # Significant contours
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
-    cv2.drawContours(HW3(img_contours), contours, -1, (0, 255, 0), thickness=2)
-    img_contours = cv2.cvtColor(HW3(img_contours), cv2.COLOR_RGB2GRAY)
+    cv2.drawContours(hw3(img_contours), contours, -1, (0, 255, 0), thickness=2)
+    img_contours = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
 
     # Morphology transformations
     img_contours = cv2.morphologyEx(img_contours, cv2.MORPH_ERODE, (3, 3), iterations=2)
