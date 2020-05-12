@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import os
 from utility import hw3
 
 
@@ -19,6 +18,7 @@ def compute_histogram(img, stripes=10):
 
 
 def init_histogram():
+    import os
     global base_hist
 
     n = len([name for name in os.listdir('photos/')])
@@ -100,7 +100,7 @@ def discard_false_positives(frame, contours):
         similarity = histogram_distance(roi)
         if similarity < 0.3:
             continue
-        # cv2.imwrite('/home/lorenzo/cvcs/image.png', HW3(roi))
+        # cv2.imwrite('photos/image.png', HW3(roi))
 
         # Discard inner rectangles
         inner, roi_list, cont_list = discard_inner_rectangles(box, roi_list, cont_list)
@@ -136,4 +136,11 @@ def detect_paintings(frame):
     # Discard false positives
     roi_list, cont_list = discard_false_positives(frame, contours)
 
+    # draw_contours(cont_list, frame)
     return roi_list, cont_list
+
+
+def draw_contours(cont_list, frame):
+    img_contours = np.zeros_like(frame)
+    cv2.drawContours(hw3(img_contours), cont_list, -1, (0, 255, 0), thickness=2)
+    cv2.imshow('Contours', cv2.resize(hw3(img_contours), (1280, 720)))

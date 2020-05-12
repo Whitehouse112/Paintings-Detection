@@ -1,14 +1,15 @@
 import numpy as np
 import cv2
 from painting_detection import detect_paintings, init_histogram
-from painting_rectification import rectify_paintings
-from utility import draw, load_video, hw3
+from painting_rectification import rectify_paintings, init_rectification
+from utility import draw, load_video
 
 
-video_name = 'VIRB0395.MP4'
+video_name = 'VIRB0392.MP4'
 video = load_video(video_name)
 
 init_histogram()
+init_rectification()
 
 while video.grab():
     _, frame = video.retrieve()
@@ -20,7 +21,7 @@ while video.grab():
     
     # Show results
     print("ROI list:", roi_list, '\n')
-    # draw(cont_list, roi_list, paintings, np.array(frame))
+    draw(roi_list, paintings, np.array(frame))
 
     # Delay & escape-key
     # video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))

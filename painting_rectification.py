@@ -1,32 +1,24 @@
 import numpy as np
 import cv2
 from utility import hw3
+import math
 
 
-# def segmentation(frame, roi_list):
-#     paintings = []
-#
-#     for roi in roi_list:
-#         x, y, w, h = roi
-#         painting = np.array(frame[:, y:y + h, x:x + w])
-#         gray = cv2.cvtColor(hw3(painting), cv2.COLOR_RGB2GRAY)
-#         _, thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-#         # thr = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 3)
-#
-#         # thr = cv2.morphologyEx(thr, cv2.MORPH_OPEN, (3, 3), iterations=1)
-#
-#         contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#         hull = cv2.convexHull(max(contours, key=len))
-#         # cv2.drawContours(HW3(painting), [hull], -1, (0, 255, 0), thickness=2)
-#
-#         img_hull = np.zeros_like(painting)
-#         cv2.drawContours(hw3(img_hull), [hull], -1, (0, 255, 0), thickness=cv2.FILLED)
-#         img_hull = cv2.cvtColor(hw3(img_hull), cv2.COLOR_RGB2GRAY)
-#         painting *= np.uint8(img_hull > 0)
-#
-#         paintings.append(painting)
-#
-#     return paintings
+errors = 0
+
+
+def init_rectification():
+    import os
+    directory = 'errors/'
+    if os.path.isdir(directory):
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            try:
+                os.unlink(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
+    else:
+        os.makedirs(directory)
 
 
 def find_intersections(lines):
@@ -57,6 +49,13 @@ def find_intersections(lines):
     return intersections
 
 
+def vertices_kmeans(intersections):
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    _, _, centers = cv2.kmeans(intersections, 4, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    centers = np.expand_dims(np.array(centers, dtype=np.float32), axis=1)
+    return centers
+
+
 def order_centers(centers):
     dtype = [('x', centers.dtype), ('y', centers.dtype)]
     centers = centers.ravel().view(dtype)
@@ -79,6 +78,7 @@ def order_centers(centers):
 
 
 def compute_aspect_ratio1(tl, tr, bl, br, frame_shape):
+    """https://www.microsoft.com/en-us/research/uploads/prod/2016/11/Digital-Signal-Processing.pdf"""
     h1 = bl[1] - tl[1]
     h2 = br[1] - tr[1]
     w1 = tr[0] - tl[0]
@@ -139,12 +139,15 @@ def compute_aspect_ratio2(tl, tr, bl, br):
     # w_min = min(tr[0] - tl[0], br[0] - bl[0])
     dim_perc_hmin = (h_min * 100) / h_max
     diff_perc = (100 - dim_perc_hmin) / 3
+    if math.isnan(w_max) is True or math.isnan(dim_perc_hmin) is True or math.isnan(diff_perc) is True:
+        return 0, 0
     w = int((w_max * 100) / (dim_perc_hmin + diff_perc))
     h = int(h_max)
     return h, w
 
 
 def rectify_paintings(cont_list, frame):
+    paintings = []
     for contour in cont_list:
         hull = cv2.convexHull(contour)
         img_hull = np.zeros_like(frame)
@@ -157,43 +160,52 @@ def rectify_paintings(cont_list, frame):
             continue
 
         intersections = find_intersections(lines)
-        # N of intersection must be greater than K (number of cluster)
         if len(intersections) < 4:
             print("Painting not found.")
+            draw_lines(frame, hull, lines)
             continue
 
-        # fare funzione per questo (find vertexes?)
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        _, _, centers = cv2.kmeans(intersections, 4, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-        centers = np.array(centers, dtype=np.float32)
+        vertices = vertices_kmeans(intersections)
 
-        tl, tr, bl, br = order_centers(centers)
+        tl, tr, bl, br = order_centers(vertices)
 
         # find aspect ratio
         # h, w = compute_aspect_ratio1(tl, tr, bl, br, frame.shape)
         h, w = compute_aspect_ratio2(tl, tr, bl, br)
+        if h == 0 or w == 0:
+            print("Painting not found.")
+            draw_lines(frame, hull, lines)
+            continue
 
         # rectification
         pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
         pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
         m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
         painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
+        paintings.append(painting)
 
-        # draw
-        cv2.imshow("Rectified", painting)
-        # cv2.imshow("Frame", hw3(frame))
-        # img_lines = np.zeros_like(frame)
-        # cv2.drawContours(hw3(img_lines), [hull], -1, (255, 0, 0), thickness=2)
-        # for line in lines:
-        #     rho, theta = line[0]
-        #     a = np.cos(theta)
-        #     b = np.sin(theta)
-        #     x0 = a * rho
-        #     y0 = b * rho
-        #     x1 = int(x0 + 2000 * (-b))
-        #     y1 = int(y0 + 2000 * a)
-        #     x2 = int(x0 - 2000 * (-b))
-        #     y2 = int(y0 - 2000 * a)
-        #     cv2.line(hw3(img_lines), (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
-        # cv2.drawContours(hw3(img_lines), np.expand_dims(centers, axis=1), -1, (0, 0, 255), thickness=5)
-        # cv2.imshow("Lines", hw3(img_lines))
+        draw_lines(frame, hull, lines, vertices)
+    return paintings
+
+
+def draw_lines(frame, hull, lines, vertices=None):
+    img_lines = np.zeros_like(frame)
+    cv2.drawContours(hw3(img_lines), [hull], -1, (255, 0, 0), thickness=2)
+    for line in lines:
+        rho, theta = line[0]
+        a = np.cos(theta)
+        b = np.sin(theta)
+        x0 = a * rho
+        y0 = b * rho
+        x1 = int(x0 + 2000 * (-b))
+        y1 = int(y0 + 2000 * a)
+        x2 = int(x0 - 2000 * (-b))
+        y2 = int(y0 - 2000 * a)
+        cv2.line(hw3(img_lines), (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
+    if vertices is not None:
+        cv2.drawContours(hw3(img_lines), np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
+    else:
+        global errors
+        cv2.imwrite('errors/error' + str(errors) + '.png', hw3(img_lines))
+        errors += 1
+    cv2.imshow("Lines", hw3(img_lines))
