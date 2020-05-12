@@ -21,15 +21,40 @@ def draw(roi_list, paintings, frame):
         cv2.rectangle(hw3(roi_frame), (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0),
                       thickness=2)
 
+    cv2.imshow('Painting Detection', cv2.resize(hw3(roi_frame), (1280, 720)))
+
+    small_paintings = []
+    for painting in paintings:
+        h, w = painting.shape[0:2]
+        if h > w:
+            wide = h
+            border = int((h - w) / 2)
+            vert = True
+        else:
+            wide = w
+            border = int((w - h) / 2)
+            vert = False
+        small = np.zeros((wide, wide, 3), dtype=np.uint8)
+        if vert:
+            if border * 2 != np.abs(h - w):
+                small[:, border:wide - border - 1] = painting
+            else:
+                small[:, border:wide - border] = painting
+        else:
+            if border * 2 != np.abs(h - w):
+                small[border:wide - border - 1] = painting
+            else:
+                small[border:wide - border] = painting
+        size = int(1280 / 4)
+        small = cv2.resize(small, (size, size))
+        small_paintings.append(small)
+
+    cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
+
     # horizontal_concat_1 = np.concatenate((img_contours, roi_frame), axis=2)
     # horizontal_concat_2 = np.concatenate((img_poly, poly_frame), axis=2)
     # vertical_concat = np.concatenate((horizontal_concat_1, horizontal_concat_2), axis=1)
     # cv2.imshow('Results', cv2.resize(hw3(vertical_concat), (1280, 720)))
-
-    cv2.imshow('Results', cv2.resize(hw3(roi_frame), (1280, 720)))
-
-    for painting in paintings:
-        cv2.imshow("Rectified", painting)
 
 
 # def segmentation(frame, roi_list):

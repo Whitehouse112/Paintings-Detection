@@ -185,7 +185,7 @@ def rectify_paintings(cont_list, frame):
         paintings.append(painting)
 
         draw_lines(img_lines, hull, lines, vertices)
-    cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
+    # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
     return paintings
 
 

@@ -5,7 +5,7 @@ from painting_rectification import rectify_paintings, init_rectification
 from utility import draw, load_video
 
 
-video_name = 'VIRB0395.MP4'
+video_name = 'GOPR5826.MP4'
 video = load_video(video_name)
 
 init_histogram()
