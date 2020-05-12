@@ -23,9 +23,12 @@ while video.grab():
     # draw(cont_list, roi_list, paintings, np.array(frame))
 
     # Delay & escape-key
-    video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
-    if cv2.waitKey(50) == ord('q'):
-        break
+    # video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
+    if cv2.waitKey(50) == ord('q'):  # pausa
+        if cv2.waitKey() == ord('q'):  # esci
+            break
+        else:  # continua
+            continue
 
 video.release()
 cv2.destroyAllWindows()
