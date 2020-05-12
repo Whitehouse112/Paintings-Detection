@@ -51,11 +51,6 @@ def draw(roi_list, paintings, frame):
 
     cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
 
-    # horizontal_concat_1 = np.concatenate((img_contours, roi_frame), axis=2)
-    # horizontal_concat_2 = np.concatenate((img_poly, poly_frame), axis=2)
-    # vertical_concat = np.concatenate((horizontal_concat_1, horizontal_concat_2), axis=1)
-    # cv2.imshow('Results', cv2.resize(hw3(vertical_concat), (1280, 720)))
-
 
 # def segmentation(frame, roi_list):
 #     paintings = []

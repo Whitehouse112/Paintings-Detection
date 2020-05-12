@@ -150,11 +150,18 @@ def rectify_paintings(cont_list, frame):
     img_lines = np.zeros_like(frame)
     for contour in cont_list:
         hull = cv2.convexHull(contour)
-        img_hull = np.zeros_like(frame)
-        cv2.drawContours(hw3(img_hull), [hull], -1, (0, 255, 0), thickness=2)
-        img_hull = cv2.cvtColor(hw3(img_hull), cv2.COLOR_RGB2GRAY)
+        # img_hull = np.zeros_like(frame)
+        # cv2.drawContours(hw3(img_hull), [hull], -1, (0, 255, 0), thickness=2)
+        # img_hull = cv2.cvtColor(hw3(img_hull), cv2.COLOR_RGB2GRAY)
 
-        lines = cv2.HoughLines(img_hull, 1, np.pi / 180, 150)
+        epsilon = 0.02 * cv2.arcLength(hull, True)
+        approx = cv2.approxPolyDP(hull, epsilon, True)
+        img_poly = np.zeros_like(frame)
+        cv2.drawContours(hw3(img_poly), [approx], -1, (0, 255, 0), thickness=5)
+        img_poly = cv2.cvtColor(hw3(img_poly), cv2.COLOR_RGB2GRAY)
+
+        lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
+        # lines = cv2.HoughLines(img_hull, 1.3, np.pi / 180, 150)
         if lines is None:
             print("Painting not found.")
             continue
@@ -184,12 +191,13 @@ def rectify_paintings(cont_list, frame):
         painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
         paintings.append(painting)
 
-        draw_lines(img_lines, hull, lines, vertices)
+        draw_lines(img_lines, approx, lines, vertices)
     # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
     return paintings
 
 
 def draw_lines(img_lines, hull, lines, vertices=None):
+    img_lines = np.zeros_like(img_lines)
     cv2.drawContours(hw3(img_lines), [hull], -1, (255, 0, 0), thickness=2)
     for line in lines:
         rho, theta = line[0]
@@ -208,3 +216,4 @@ def draw_lines(img_lines, hull, lines, vertices=None):
         global errors
         cv2.imwrite('errors/error' + str(errors) + '.png', hw3(img_lines))
         errors += 1
+    # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))

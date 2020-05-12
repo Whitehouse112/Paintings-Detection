@@ -30,6 +30,7 @@ while video.grab():
             break
         else:  # continua
             continue
+    # cv2.waitKey()
 
 video.release()
 cv2.destroyAllWindows()
