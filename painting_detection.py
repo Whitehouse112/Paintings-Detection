@@ -4,6 +4,8 @@ from utility import hw3
 
 
 base_hist = None
+num_ex = 0
+sum_hist = 0
 
 
 def compute_histogram(img, stripes=10):
@@ -19,7 +21,7 @@ def compute_histogram(img, stripes=10):
 
 def init_histogram():
     import os
-    global base_hist
+    global base_hist, num_ex, sum_hist
 
     n = len([name for name in os.listdir('photos/')])
     for i in range(1, n + 1):
@@ -32,6 +34,8 @@ def init_histogram():
             base_hist = hist
         else:
             base_hist += hist
+    sum_hist = base_hist
+    num_ex = n
     base_hist /= n
 
 
@@ -98,7 +102,7 @@ def discard_false_positives(frame, contours):
         # Histogram distance
         roi = frame[:, y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        if similarity < 0.3:
+        if similarity < 0.38:
             continue
         # cv2.imwrite('photos/image.png', HW3(roi))
 
@@ -113,6 +117,17 @@ def discard_false_positives(frame, contours):
     return roi_list, cont_list
 
 
+def update_histogram(roi_list, frame):
+    global base_hist, num_ex, sum_hist
+    for roi in roi_list:
+        x, y, w, h = roi
+        example = frame[:, y:y + h, x:x + w]
+        ex_hist = compute_histogram(example)
+        sum_hist += ex_hist
+        num_ex += 1
+        base_hist = sum_hist / num_ex
+
+
 def detect_paintings(frame):
     # Blurring
     gray = cv2.cvtColor(hw3(frame), cv2.COLOR_RGB2GRAY)
@@ -124,23 +139,31 @@ def detect_paintings(frame):
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(hw3(img_contours), contours, -1, (0, 255, 0), thickness=2)
-    img_contours = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
 
     # Morphology transformations
-    img_contours = cv2.morphologyEx(img_contours, cv2.MORPH_ERODE, (3, 3), iterations=2)
-    img_contours = cv2.morphologyEx(img_contours, cv2.MORPH_CLOSE, (3, 3), iterations=5)
+    img_morph = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)  # do not touch
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=5)
 
     # Significant contours
-    contours, _ = cv2.findContours(img_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Discard false positives
     roi_list, cont_list = discard_false_positives(frame, contours)
 
-    # draw_contours(cont_list, frame)
+    global num_ex
+    if num_ex < 50:
+        update_histogram(roi_list, frame)
+
+    # draw_contours(img_morph, contours, frame)
     return roi_list, cont_list
 
 
-def draw_contours(cont_list, frame):
+def draw_contours(img_morph, contours, frame):
     img_contours = np.zeros_like(frame)
-    cv2.drawContours(hw3(img_contours), cont_list, -1, (0, 255, 0), thickness=2)
-    cv2.imshow('Contours', cv2.resize(hw3(img_contours), (1280, 720)))
+    cv2.drawContours(hw3(img_contours), contours, -1, (0, 255, 0), thickness=2)
+    img_contours = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
+
+    vertical_concat = np.concatenate((img_morph, img_contours), axis=0)
+    cv2.imshow('Contours', cv2.resize(vertical_concat, (int(1600 / 2), 900)))

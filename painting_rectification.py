@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 from utility import hw3
-import math
 
 
 errors = 0
@@ -137,10 +136,10 @@ def compute_aspect_ratio2(tl, tr, bl, br):
     h_min = min(bl[1] - tl[1], br[1] - tr[1])
     w_max = max(tr[0] - tl[0], br[0] - bl[0])
     # w_min = min(tr[0] - tl[0], br[0] - bl[0])
+    if h_max == 0 or h_min == 0 or w_max == 0:
+        return 0, 0
     dim_perc_hmin = (h_min * 100) / h_max
     diff_perc = (100 - dim_perc_hmin) / 3
-    if math.isnan(w_max) is True or math.isnan(dim_perc_hmin) is True or math.isnan(diff_perc) is True:
-        return 0, 0
     w = int((w_max * 100) / (dim_perc_hmin + diff_perc))
     h = int(h_max)
     return h, w
@@ -148,6 +147,7 @@ def compute_aspect_ratio2(tl, tr, bl, br):
 
 def rectify_paintings(cont_list, frame):
     paintings = []
+    img_lines = np.zeros_like(frame)
     for contour in cont_list:
         hull = cv2.convexHull(contour)
         img_hull = np.zeros_like(frame)
@@ -162,7 +162,7 @@ def rectify_paintings(cont_list, frame):
         intersections = find_intersections(lines)
         if len(intersections) < 4:
             print("Painting not found.")
-            draw_lines(frame, hull, lines)
+            draw_lines(img_lines, hull, lines)
             continue
 
         vertices = vertices_kmeans(intersections)
@@ -174,7 +174,7 @@ def rectify_paintings(cont_list, frame):
         h, w = compute_aspect_ratio2(tl, tr, bl, br)
         if h == 0 or w == 0:
             print("Painting not found.")
-            draw_lines(frame, hull, lines)
+            draw_lines(img_lines, hull, lines, vertices)
             continue
 
         # rectification
@@ -184,12 +184,12 @@ def rectify_paintings(cont_list, frame):
         painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
         paintings.append(painting)
 
-        draw_lines(frame, hull, lines, vertices)
+        draw_lines(img_lines, hull, lines, vertices)
+    cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
     return paintings
 
 
-def draw_lines(frame, hull, lines, vertices=None):
-    img_lines = np.zeros_like(frame)
+def draw_lines(img_lines, hull, lines, vertices=None):
     cv2.drawContours(hw3(img_lines), [hull], -1, (255, 0, 0), thickness=2)
     for line in lines:
         rho, theta = line[0]
@@ -208,4 +208,3 @@ def draw_lines(frame, hull, lines, vertices=None):
         global errors
         cv2.imwrite('errors/error' + str(errors) + '.png', hw3(img_lines))
         errors += 1
-    cv2.imshow("Lines", hw3(img_lines))
