@@ -19,7 +19,8 @@ For each frame of the video:
 ### Painting rectification
 Starting from contours found in previous point and considering one contour at a time:
 1. Convex hull
-2. Hough Lines
-3. Find lines intersections
-4. K-means
-5. Warp perspective
+2. ApproxPolyDP
+3. Hough Lines
+4. Find lines intersections
+5. K-means
+6. Warp perspective

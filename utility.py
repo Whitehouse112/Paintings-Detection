@@ -51,28 +51,3 @@ def draw(roi_list, paintings, frame):
 
     cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
 
-
-# def segmentation(frame, roi_list):
-#     paintings = []
-#
-#     for roi in roi_list:
-#         x, y, w, h = roi
-#         painting = np.array(frame[:, y:y + h, x:x + w])
-#         gray = cv2.cvtColor(hw3(painting), cv2.COLOR_RGB2GRAY)
-#         _, thr = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-#         # thr = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 3)
-#
-#         # thr = cv2.morphologyEx(thr, cv2.MORPH_OPEN, (3, 3), iterations=1)
-#
-#         contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#         hull = cv2.convexHull(max(contours, key=len))
-#         # cv2.drawContours(HW3(painting), [hull], -1, (0, 255, 0), thickness=2)
-#
-#         img_hull = np.zeros_like(painting)
-#         cv2.drawContours(hw3(img_hull), [hull], -1, (0, 255, 0), thickness=cv2.FILLED)
-#         img_hull = cv2.cvtColor(hw3(img_hull), cv2.COLOR_RGB2GRAY)
-#         painting *= np.uint8(img_hull > 0)
-#
-#         paintings.append(painting)
-#
-#     return paintings

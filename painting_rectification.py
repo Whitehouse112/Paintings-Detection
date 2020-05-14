@@ -77,7 +77,11 @@ def order_centers(centers):
 
 
 def compute_aspect_ratio1(tl, tr, bl, br, frame_shape):
-    """https://www.microsoft.com/en-us/research/uploads/prod/2016/11/Digital-Signal-Processing.pdf"""
+    """
+    Whiteboard scanning and image enhancement
+    Zhengyou Zhang, Li-Wei He
+    https://www.microsoft.com/en-us/research/uploads/prod/2016/11/Digital-Signal-Processing.pdf
+    """
     h1 = bl[1] - tl[1]
     h2 = br[1] - tr[1]
     w1 = tr[0] - tl[0]
@@ -130,29 +134,11 @@ def compute_aspect_ratio1(tl, tr, bl, br, frame_shape):
     return h, w
 
 
-def compute_aspect_ratio2(tl, tr, bl, br):
-    # da aggiustare
-    h_max = max(bl[1] - tl[1], br[1] - tr[1])
-    h_min = min(bl[1] - tl[1], br[1] - tr[1])
-    w_max = max(tr[0] - tl[0], br[0] - bl[0])
-    # w_min = min(tr[0] - tl[0], br[0] - bl[0])
-    if h_max == 0 or h_min == 0 or w_max == 0:
-        return 0, 0
-    dim_perc_hmin = (h_min * 100) / h_max
-    diff_perc = (100 - dim_perc_hmin) / 3
-    w = int((w_max * 100) / (dim_perc_hmin + diff_perc))
-    h = int(h_max)
-    return h, w
-
-
 def rectify_paintings(cont_list, frame):
     paintings = []
     img_lines = np.zeros_like(frame)
     for contour in cont_list:
         hull = cv2.convexHull(contour)
-        # img_hull = np.zeros_like(frame)
-        # cv2.drawContours(hw3(img_hull), [hull], -1, (0, 255, 0), thickness=2)
-        # img_hull = cv2.cvtColor(hw3(img_hull), cv2.COLOR_RGB2GRAY)
 
         epsilon = 0.02 * cv2.arcLength(hull, True)
         approx = cv2.approxPolyDP(hull, epsilon, True)
@@ -161,7 +147,6 @@ def rectify_paintings(cont_list, frame):
         img_poly = cv2.cvtColor(hw3(img_poly), cv2.COLOR_RGB2GRAY)
 
         lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
-        # lines = cv2.HoughLines(img_hull, 1.3, np.pi / 180, 150)
         if lines is None:
             print("Painting not found.")
             continue
@@ -177,8 +162,7 @@ def rectify_paintings(cont_list, frame):
         tl, tr, bl, br = order_centers(vertices)
 
         # find aspect ratio
-        # h, w = compute_aspect_ratio1(tl, tr, bl, br, frame.shape)
-        h, w = compute_aspect_ratio2(tl, tr, bl, br)
+        h, w = compute_aspect_ratio1(tl, tr, bl, br, frame.shape)
         if h == 0 or w == 0:
             print("Painting not found.")
             draw_lines(img_lines, hull, lines, vertices)
