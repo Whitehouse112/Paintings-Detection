@@ -5,7 +5,7 @@ from painting_rectification import rectify_paintings, init_rectification
 from utility import draw, load_video
 
 
-video_name = 'GOPR5826.MP4'
+video_name = 'VIRB0395.MP4'
 video = load_video(video_name)
 
 init_histogram()
@@ -24,13 +24,13 @@ while video.grab():
     draw(roi_list, paintings, np.array(frame))
 
     # Delay & escape-key
-    # video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
-    if cv2.waitKey(50) == ord('q'):  # pausa
-        if cv2.waitKey() == ord('q'):  # esci
-            break
-        else:  # continua
-            continue
-    # cv2.waitKey()
+    #video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
+    # if cv2.waitKey(50) == ord('q'):  # pausa
+    #     if cv2.waitKey() == ord('q'):  # esci
+    #         break
+    #     else:  # continua
+    #         continue
+    cv2.waitKey()
 
 video.release()
 cv2.destroyAllWindows()
