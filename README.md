@@ -1,6 +1,10 @@
 # Vc-Group
 Final project for (Computer) Vision and Cognitive System
 
+# Requirements
+- numpy
+- opencv-python==3.4.2.17
+
 ## Pipeline
 
 For each frame of the video:
