@@ -3,7 +3,7 @@ Final project for (Computer) Vision and Cognitive System
 
 # Requirements
 - numpy
-- opencv-python==3.4.2.17
+- opencv-python
 
 ## Pipeline
 

@@ -1,10 +1,8 @@
 import numpy as np
 import cv2
 
-
 def hw3(image):
     return np.swapaxes(np.swapaxes(image, 0, 1), 1, 2)
-
 
 def load_video(video_name):
     path = 'videos/'
@@ -14,6 +12,37 @@ def load_video(video_name):
         exit(1)
     return video
 
+def resize_concatenate(paintings):
+
+    small_paintings = []
+    for painting in paintings:
+            if len(painting.shape) != 3:
+                painting = cv2.cvtColor(painting, cv2.COLOR_GRAY2RGB)
+            h, w = painting.shape[0:2]
+            if h > w:
+                wide = h
+                border = int((h - w) / 2)
+                vert = True
+            else:
+                wide = w
+                border = int((w - h) / 2)
+                vert = False
+            small = np.zeros((wide, wide, 3), dtype=np.uint8)
+            if vert:
+                if border * 2 != np.abs(h - w):
+                    small[:, border:wide - border - 1] = painting
+                else:
+                    small[:, border:wide - border] = painting
+            else:
+                if border * 2 != np.abs(h - w):
+                    small[border:wide - border - 1] = painting
+                else:
+                    small[border:wide - border] = painting
+            size = int(1280 / 4)
+            small = cv2.resize(small, (size, size))
+            small_paintings.append(small)
+    return small_paintings
+
 
 def draw(roi_list, paintings, frame):
     roi_frame = np.array(frame)
@@ -22,32 +51,5 @@ def draw(roi_list, paintings, frame):
                       thickness=2)
 
     cv2.imshow('Painting Detection', cv2.resize(hw3(roi_frame), (1280, 720)))
-
-    small_paintings = []
-    for painting in paintings:
-        h, w = painting.shape[0:2]
-        if h > w:
-            wide = h
-            border = int((h - w) / 2)
-            vert = True
-        else:
-            wide = w
-            border = int((w - h) / 2)
-            vert = False
-        small = np.zeros((wide, wide, 3), dtype=np.uint8)
-        if vert:
-            if border * 2 != np.abs(h - w):
-                small[:, border:wide - border - 1] = painting
-            else:
-                small[:, border:wide - border] = painting
-        else:
-            if border * 2 != np.abs(h - w):
-                small[border:wide - border - 1] = painting
-            else:
-                small[border:wide - border] = painting
-        size = int(1280 / 4)
-        small = cv2.resize(small, (size, size))
-        small_paintings.append(small)
-
-    cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
-
+    resized = resize_concatenate(paintings)
+    cv2.imshow("Painting Rectification", np.concatenate(resized, axis=1))

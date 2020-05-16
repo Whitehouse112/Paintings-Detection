@@ -2,6 +2,7 @@
 .vscode/
 .pylintrc
 __pycache__/
-videos/
 errors/
 env/
+paintings_db/
+videos/

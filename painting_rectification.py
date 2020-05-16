@@ -278,4 +278,4 @@ def draw_lines(img_lines, hull, lines, vertices=None):
         global errors
         cv2.imwrite('errors/error' + str(errors) + '.png', hw3(img_lines))
         errors += 1
-    cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
+    #cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
