@@ -11,6 +11,7 @@ sum_hist = 0
 def compute_histogram(img, stripes=10):
     """https://www.researchgate.net/publication/310953361_Comparative_study_of_histogram_distance_measures_for_re
     -identification """
+
     mask = np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8)
 
     every = img.shape[1] // (stripes + 1)
@@ -121,6 +122,7 @@ def discard_false_positives(frame, contours):
 
 def update_histogram(roi_list, frame):
     global base_hist, num_ex, sum_hist
+
     for roi in roi_list:
         x, y, w, h = roi
         example = frame[:, y:y + h, x:x + w]

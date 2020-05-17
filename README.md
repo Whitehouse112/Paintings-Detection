@@ -10,6 +10,7 @@ Final project for (Computer) Vision and Cognitive System
 For each frame of the video:
 
 ### Painting detection
+Predict a ROI for each painting:
 1. Gaussian Blurring
 2. Edge Detection with Sobel
 3. Morphology Transformations
@@ -26,5 +27,11 @@ Starting from contours found in previous point and considering one contour at a 
 2. ApproxPolyDP
 3. Hough Lines
 4. Find lines intersections
-5. K-means
-6. Warp perspective
+5. K-means to find average vertices
+6. Order vertices
+7. Compute aspect-ratio
+8. Warp perspective
+
+### Painting retrieval
+Match each detected painting to the paintings DB:
+1. ORB

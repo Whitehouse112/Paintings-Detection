@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from matplotlib import pyplot as plt
 
 
 def hw3(image):
@@ -15,7 +16,7 @@ def load_video(video_name):
     return video
 
 
-def resize_concatenate(paintings):
+def resize_images(paintings):
     small_paintings = []
     for painting in paintings:
         if len(painting.shape) == 2:
@@ -46,14 +47,23 @@ def resize_concatenate(paintings):
     return small_paintings
 
 
-def draw(roi_list, paintings, frame):
+def draw(roi_list, paintings, retrieved, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
         cv2.rectangle(hw3(roi_frame), (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0),
                       thickness=2)
 
     cv2.imshow('Painting Detection', cv2.resize(hw3(roi_frame), (1280, 720)))
-    resized = resize_concatenate(paintings)
 
-    if len(resized) > 0:
-        cv2.imshow("Painting Rectification", np.concatenate(resized, axis=1))
+    small_paintings = resize_images(paintings)
+    if len(small_paintings) > 0:
+        cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
+
+    small_retrieved = resize_images(retrieved)
+    if len(small_retrieved) > 0:
+        cv2.imshow("Retrieved paintings", np.concatenate(small_retrieved, axis=1))
+
+
+def plot_f_histogram(f_list):
+    plt.hist(f_list, 20, [0, 2000])
+    plt.show()
