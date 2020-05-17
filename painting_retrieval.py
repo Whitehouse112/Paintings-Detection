@@ -28,7 +28,7 @@ def retrieve_paintings(paintings):
     for painting in paintings:
         gray = cv2.cvtColor(painting, cv2.COLOR_RGB2GRAY)
 
-        matcher = cv2.BFMatcher()
+        matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
         orb = cv2.ORB_create()
         _, des = orb.detectAndCompute(gray, None)
 
@@ -39,15 +39,15 @@ def retrieve_paintings(paintings):
         found = 0
         for i, img in enumerate(db):
             good_points = []
-            matches = matcher.match(des, img[1][1])
-            for m in matches:
-                if m.distance < 100:
+            matches = matcher.knnMatch(des, img[1][1], k=2)
+            for m, n in matches:
+                if m.distance < 0.75*n.distance:
                     good_points.append(m)
             if best < len(good_points):
                 best = len(good_points)
                 found = i
                            
-        if best < 5:
+        if best < 20:
             print("No matches found")
         else:
             retrieved.append(db[found][0])
