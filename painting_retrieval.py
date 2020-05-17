@@ -1,6 +1,4 @@
-# import numpy as np
 import cv2
-# from utility import hw3
 
 
 db = []
