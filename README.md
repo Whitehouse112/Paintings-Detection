@@ -7,7 +7,7 @@ Final project for (Computer) Vision and Cognitive System
 
 ## Pipeline
 
-For each frame of the video:
+For each video frame:
 
 ### Painting detection
 Predict a ROI for each painting:
