@@ -4,6 +4,10 @@ from utility import hw3
 
 
 errors = 0
+f_tot = 1000
+num_f = 1
+focal_length = 1000
+f_list = []
 
 
 def init_rectification():
@@ -82,6 +86,7 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     Zhengyou Zhang, Li-Wei He
     https://www.microsoft.com/en-us/research/uploads/prod/2016/11/Digital-Signal-Processing.pdf
     """
+
     h1 = bl[1] - tl[1]
     h2 = br[1] - tr[1]
     w1 = tr[0] - tl[0]
@@ -89,25 +94,19 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     h = max(h1, h2)
     w = max(w1, w2)
 
-    #print(f"h1:{h1}\nh2:{h2}\nw1:{w1}\nw2:{w2}\nh:{h}\nw:{w}\n")
-    if h == 0 or w == 0:
-        return 0,0
-
     # image center
     u0 = frame_shape[2] / 2
     v0 = frame_shape[1] / 2
 
-    #print(f"u0:{u0}\nv0:{v0}")
-
     ar_vis = w / h  # visible aspect ratio
+
     m1 = np.append(tl, 1)
     m2 = np.append(tr, 1)
     m3 = np.append(bl, 1)
     m4 = np.append(br, 1)
 
-    #print(f"ar_vis:{ar_vis}\n")
-
-    # calculate the focal distance
+    # cross product = prodotto vettoriale
+    # dot product = prodotto scalare
     k2 = np.dot(np.cross(m1, m4), m3) / np.dot(np.cross(m2, m4), m3)
     k3 = np.dot(np.cross(m1, m4), m2) / np.dot(np.cross(m3, m4), m2)
 
@@ -117,14 +116,22 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     n21, n22, n23 = n2
     n31, n32, n33 = n3
 
-    if n23 != 0 and n33 != 0:
-        f_squared = -((1 / (n23 * n33)) * ((n21 * n31 - (n21 * n33 + n23 * n31) * u0 + n23 * n33 * (u0 ** 2)) + (n22 * n32 - (n22 * n33 + n23 * n32) * v0 + n23 * n33 * (v0 ** 2))))
+    if n23 != 0 or n33 != 0:
+        # focal lenght (in pixel^2?, 1px = 0.2645833mm)
+        f_squared = -((1 / (n23 * n33)) * ((n21 * n31 - (n21 * n33 + n23 * n31) * u0 + n23 * n33 * (u0 ** 2)) + (
+                n22 * n32 - (n22 * n33 + n23 * n32) * v0 + n23 * n33 * (v0 ** 2))))
 
-        print(f_squared)
-        if f_squared < 0:
-            return compute_aspect_ratio2(tl, tr, bl, br)
-        else:
+        global focal_length, f_tot, num_f
+        if 0 < f_squared < 2000 ** 2 and num_f < 300:
             f = np.sqrt(f_squared)
+            f_tot += f
+            num_f += 1
+            focal_length = f_tot / num_f
+            print("Number of f approximations = ", num_f)
+            print("Detected focal lenght = ", f, "(", f * 0.2645833 / 10, "mm )")
+            print("Medium focal length = ", focal_length, "(", focal_length * 0.2645833 / 10, "mm )")
+            f_list.append(f)
+        f = focal_length
 
         A = np.array([[f, 0, u0], [0, f, v0], [0, 0, 1]], dtype=np.float32)
 
@@ -146,77 +153,12 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
 
     return h, w
 
-# def compute_aspect_ratio1(tl, tr, bl, br, frame_shape):
-#     """
-#     Whiteboard scanning and image enhancement
-#     Zhengyou Zhang, Li-Wei He
-#     https://www.microsoft.com/en-us/research/uploads/prod/2016/11/Digital-Signal-Processing.pdf
-#     """
-
-#     h1 = bl[1] - tl[1]
-#     h2 = br[1] - tr[1]
-#     w1 = tr[0] - tl[0]
-#     w2 = br[0] - bl[0]
-#     h = max(h1, h2)
-#     w = max(w1, w2)
-
-#     ar_vis = w / h
-
-#     # image center
-#     u0 = frame_shape[2] / 2
-#     v0 = frame_shape[1] / 2
- 
-#     m1 = tl - [u0, v0]
-#     m2 = tr - [u0, v0]
-#     m3 = bl - [u0, v0]
-#     m4 = br - [u0, v0]
-
-#     k2 = ((m1[1]-m4[1])*m3[0] - (m1[0]-m4[0])*m3[1] + m1[0]*m4[1] - m1[1]*m4[0]) / ((m2[1]-m4[1])*m3[0] - (m2[0]-m4[0])*m3[1] + m2[0]*m4[1] - m2[1]*m4[0])
-
-#     k3 = ((m1[1]-m4[1])*m2[0] - (m1[0]-m4[0])*m2[1] + m1[0]*m4[1] - m1[1]*m4[0]) / ((m3[1]-m4[1])*m2[0] - (m3[0]-m4[0])*m2[1] + m3[0]*m4[1] - m3[1]*m4[0])
-
-
-#     if k2 != 1 or k3 != 1:
-#         f_squared = np.abs(-((k3*m3[1] - m1[1])*(k2*m2[1] - m1[1]) + (k3*m3[0] - m1[0])*(k2*m2[0] - m1[0])) / ((k3 - 1)*(k2 - 1)))
-
-#         hwRatio = np.sqrt(((k2 - 1)**2 + ((k2*m2[1] - m1[1])**2)/f_squared + ((k2*m2[0] - m1[0])**2)/f_squared) / ((k3 - 1)**2 + ((k3*m3[1] - m1[1])**2)/f_squared + ((k3*m3[0] - m1[0])**2)/f_squared))
-#     else:
-#         hwRatio = np.sqrt(((m2[1]-m1[1])**2 + (m2[0]-m1[0])**2) / ((m3[1]-m1[1])**2 + (m3[0]-m1[0])**2))
-    
-#     whRatio = 1 / hwRatio
-
-#     if whRatio < ar_vis:
-#         w = int(w)
-#         h = int(w / whRatio)
-#     else:
-#         h = int(h)
-#         w = int(whRatio * h)
-
-#     return h, w
-
-def compute_aspect_ratio2(tl, tr, bl, br):
-    # da aggiustare
-    h_max = max(bl[1] - tl[1], br[1] - tr[1])
-    h_min = min(bl[1] - tl[1], br[1] - tr[1])
-    w_max = max(tr[0] - tl[0], br[0] - bl[0])
-    # w_min = min(tr[0] - tl[0], br[0] - bl[0])
-    if h_max == 0 or h_min == 0 or w_max == 0:
-        return 0, 0
-    dim_perc_hmin = (h_min * 100) / h_max
-    diff_perc = (100 - dim_perc_hmin) / 3
-    w = int((w_max * 100) / (dim_perc_hmin + diff_perc))
-    h = int(h_max)
-    return h, w
-
 
 def rectify_paintings(cont_list, frame):
     paintings = []
     img_lines = np.zeros_like(frame)
     for contour in cont_list:
         hull = cv2.convexHull(contour)
-        # img_hull = np.zeros_like(frame)
-        # cv2.drawContours(hw3(img_hull), [hull], -1, (0, 255, 0), thickness=2)
-        # img_hull = cv2.cvtColor(hw3(img_hull), cv2.COLOR_RGB2GRAY)
 
         epsilon = 0.02 * cv2.arcLength(hull, True)
         approx = cv2.approxPolyDP(hull, epsilon, True)
@@ -225,7 +167,6 @@ def rectify_paintings(cont_list, frame):
         img_poly = cv2.cvtColor(hw3(img_poly), cv2.COLOR_RGB2GRAY)
 
         lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
-        # lines = cv2.HoughLines(img_hull, 1.3, np.pi / 180, 150)
         if lines is None:
             print("Painting not found.")
             continue
@@ -239,13 +180,13 @@ def rectify_paintings(cont_list, frame):
         vertices = vertices_kmeans(intersections)
 
         tl, tr, bl, br = order_centers(vertices)
-
-        # find aspect ratio
-        h, w = compute_aspect_ratio(tl, tr, bl, br, frame.shape)
-        if h == 0 or w == 0:
+        if bl[1] - tl[1] == 0 or br[1] - tr[1] == 0 or tr[0] - tl[0] == 0 or br[0] - bl[0] == 0:
             print("Painting not found.")
             draw_lines(img_lines, hull, lines, vertices)
             continue
+
+        # find aspect ratio
+        h, w = compute_aspect_ratio(tl, tr, bl, br, frame.shape)
 
         # rectification
         pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
@@ -254,9 +195,10 @@ def rectify_paintings(cont_list, frame):
         painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
         paintings.append(painting)
 
-        draw_lines(img_lines, approx, lines, vertices)
+        # draw_lines(img_lines, approx, lines, vertices)
     # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
-    return paintings
+    return paintings, f_list
+
 
 def draw_lines(img_lines, hull, lines, vertices=None):
     img_lines = np.zeros_like(img_lines)
@@ -271,11 +213,11 @@ def draw_lines(img_lines, hull, lines, vertices=None):
         y1 = int(y0 + 2000 * a)
         x2 = int(x0 - 2000 * (-b))
         y2 = int(y0 - 2000 * a)
-        #cv2.line(hw3(img_lines), (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
+        cv2.line(hw3(img_lines), (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
     if vertices is not None:
         cv2.drawContours(hw3(img_lines), np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
     else:
         global errors
         cv2.imwrite('errors/error' + str(errors) + '.png', hw3(img_lines))
         errors += 1
-    #cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
+    # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))

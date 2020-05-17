@@ -1,7 +1,7 @@
 # Vc-Group
 Final project for (Computer) Vision and Cognitive System
 
-# Requirements
+## Requirements
 - numpy
 - opencv-python
 
