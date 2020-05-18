@@ -41,13 +41,13 @@ def retrieve_paintings(paintings):
             good_points = []
             matches = matcher.knnMatch(des, img[1][1], k=2)
             for m, n in matches:
-                if m.distance < 0.75*n.distance:
+                if m.distance < 0.6*n.distance:
                     good_points.append(m)
             if best < len(good_points):
                 best = len(good_points)
                 found = i
                            
-        if best < 20:
+        if best < 10:
             print("No matches found")
         else:
             retrieved.append(db[found][0])
