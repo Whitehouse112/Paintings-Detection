@@ -188,12 +188,16 @@ def rectify_paintings(cont_list, frame):
         # find aspect ratio
         h, w = compute_aspect_ratio(tl, tr, bl, br, frame.shape)
 
-        # rectification
-        pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
-        pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
-        m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
-        painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
-        paintings.append(painting)
+        if (0 < h <= 1080) and (0 < w <= 1920):
+            # rectification
+            pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
+            pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
+            m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
+            painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
+            
+            h = painting.shape[0]
+            w = painting.shape[1]
+            paintings.append(painting)
 
         # draw_lines(img_lines, approx, lines, vertices)
     # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
