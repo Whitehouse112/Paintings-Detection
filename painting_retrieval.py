@@ -23,8 +23,8 @@ def init_database():
 
 
 def retrieve_paintings(paintings):
-    
     retrieved = []
+
     for painting in paintings:
         gray = cv2.cvtColor(painting, cv2.COLOR_RGB2GRAY)
 
@@ -37,19 +37,25 @@ def retrieve_paintings(paintings):
         
         best = 0
         found = 0
+        percentages = []
+
         for i, img in enumerate(db):
             good_points = []
             matches = matcher.knnMatch(des, img[1][1], k=2)
             for m, n in matches:
-                if m.distance < 0.6*n.distance:
+                if m.distance < 0.75*n.distance:
                     good_points.append(m)
             if best < len(good_points):
                 best = len(good_points)
+                percentages.append(round(len(good_points)/len(matches)*100))
                 found = i
-                           
-        if best < 10:
-            print("No matches found")
-        else:
-            retrieved.append(db[found][0])
 
+        if len(percentages) != 0:                  
+            if max(percentages) < 4:
+                print(f"Lower: {max(percentages)}") 
+            else:
+                print(f"Higher: {max(percentages)}") 
+                retrieved.append(db[found][0])
+
+    
     return retrieved
