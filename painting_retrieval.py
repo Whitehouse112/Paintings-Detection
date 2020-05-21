@@ -26,7 +26,7 @@ def init_database():
 def createMask(painting):
     mask = np.zeros_like((painting), dtype=np.uint8)
 
-    #The painting passed is a gray scale image
+    #The painting is passed as a gray scale image
     h = painting.shape[0]
     h_del = round(h*0.2)
     w = painting.shape[1]
@@ -45,7 +45,7 @@ def findBestMatch(painting_descriptor):
         good_points = []
         matches = matcher.knnMatch(painting_descriptor, img[1][1], k=2)
         for m, n in matches:
-            if m.distance < 0.80*n.distance:
+            if m.distance < 0.75*n.distance:
                 good_points.append(m)
         if best < len(good_points):
             best = len(good_points)
@@ -61,14 +61,18 @@ def retrieve_paintings(paintings):
         gray = cv2.cvtColor(painting, cv2.COLOR_RGB2GRAY)
         orb = cv2.ORB_create()
         
-        #mask = createMask(gray)       
-        _, des = orb.detectAndCompute(gray, None)
+        mask = createMask(gray)       
+        _, des = orb.detectAndCompute(gray, mask)
         
         found, percentage = findBestMatch(des)
         
         if percentage is not None and found is not None:                  
-            if percentage >= 10:
-                print(f"Percentage: {percentage}") 
+            if percentage > 5:
+                print(f"Percentage: {percentage}%") 
                 retrieved.append(db[found][0])
+            else:
+                retrieved.append(np.zeros_like(painting))
+        else:
+            retrieved.append(np.zeros_like(painting))
     
     return retrieved
