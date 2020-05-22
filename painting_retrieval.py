@@ -10,14 +10,12 @@ def init_database():
     global db
     
     orb = cv2.ORB_create()
-    # sift = cv2.xfeatures2d.SIFT_create()
     tmp = []
 
     names = [name for name in os.listdir('paintings_db/')]
     for name in names:
         img = cv2.imread(f"paintings_db/{name}")
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-        # kp, des = sift.detectAndCompute(img,None)
         kp, des = orb.detectAndCompute(img, None)
         tmp.append([img, (kp, des)])
     db = tmp

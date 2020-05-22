@@ -4,37 +4,38 @@ import numpy as np
 def cropROI(frame, ROIs):
     frame_h, frame_w = frame.shape[:2]
 
-    kernel = np.ones((3, 3), np.uint8)
-    # ker_er = np.ones((2,2), np.uint8)
+    kernel = np.ones((5, 5), np.uint8)
+    ker_close = np.ones((7, 7), np.uint8)
+    ker_er = np.ones((2,2), np.uint8)
 
     hull = []
     blank = np.zeros((frame_h, frame_w, 3), dtype=np.uint8)
 
-
     img = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+    # grad = cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel, iterations=1)
+    # _, thr = cv2.threshold(grad, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
+    # cv2.imshow('Normal', thr)
+
+    # create a CLAHE object (Arguments are optional).
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    cl1 = clahe.apply(img)
+
+    grad = cv2.morphologyEx(cl1, cv2.MORPH_GRADIENT, kernel, iterations=1)
+    bil = cv2.bilateralFilter(grad, 5, 200, 200)
+    _, thr = cv2.threshold(bil, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
+
+    thr = cv2.morphologyEx(thr, cv2.MORPH_CLOSE, kernel, iterations=2)
+    thr = cv2.dilate(thr, (5, 5), iterations=3)
     
-    # grad = cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel)
-    # ret, thr = cv2.threshold(grad, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
-    # thr = cv2.adaptiveThreshold(grad, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 5, 3)
-    # thr = np.uint8(grad>ret-5)*255
-    # thr = cv2.bilateralFilter(lap(img), 5, 150, 150)
-    # _, thr = cv2.threshold(thr, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
-    # thr = cv2.morphologyEx(thr, cv2.MORPH_CLOSE, kernel, iterations=3)
-    # thr = cv2.erode(thr, kernel, iterations=1)
-
-    thr = lap(img)
-
-    contours = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # test = cv2.drawContours(blank, contours, -1, (0, 255, 0), thickness=cv2.FILLED)
-
-
 
     for i in range(len(contours)):
         hull.append(cv2.convexHull(contours[i], True))
     cv2.drawContours(blank, hull, -1, (0, 255, 0), thickness=2)
-
     
     mask = np.zeros((frame_h+2, frame_w+2), dtype=np.uint8)
+
     x0, y0 = findBackground(ROIs, hull, frame_w, frame_h)
     # cv2.circle(blank, (x0, y0), 0, (255, 0, 0), 5)
     flood = cv2.cvtColor(blank, cv2.COLOR_RGB2GRAY)
@@ -42,7 +43,7 @@ def cropROI(frame, ROIs):
     inv = cv2.bitwise_not(flood)
     out = thr | inv
 
-    contours = cv2.findContours(out, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    contours, _ = cv2.findContours(out, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     dist = frame_w + frame_h
     frames = {}
@@ -87,33 +88,26 @@ def findBackground(ROIs, contours, frame_w, frame_h):
                 x0 = np.max((1, x-5))
                 y0 = np.max((1, y-5))
                 if checkContour(contours, x0, y0):
-                    x0 = np.min((frame_w-1, x+w+2))
-                    y0 = np.min((frame_h-1, y+h+2))
+                    x0 = np.min((frame_w-1, x+w+5))
+                    y0 = np.min((frame_h-1, y+h+5))
             else:
-                x0 = np.min((frame_w-1, x+w+2))
-                y0 = np.min((frame_h-1, y+h+2))
+                x0 = np.min((frame_w-1, x+w+5))
+                y0 = np.min((frame_h-1, y+h+5))
     
     return x0, y0
 
 def checkContour(contours, x0, y0):
-
     for contour in contours:
-        if cv2.pointPolygonTest(contour, (x0, y0), False) != -1:
-            return True
+        if cv2.pointPolygonTest(contour, (x0, y0), False) != -1: return True
     return False
 
 def lap(img):
-    kernel = np.ones((3, 3), np.uint8)
-    ker_close = np.ones((4, 2), np.uint8)
-    ker_er = np.ones((2,2), np.uint8)
-
-    cv2.GaussianBlur(img, (3, 3), 0)
-    dst = cv2.Laplacian(img, cv2.CV_32S, ksize=5)
+    # blur = cv2.GaussianBlur(img, (3, 3), 0)
+    dst = cv2.Laplacian(img, cv2.CV_16S, ksize=3)
     abs_dst = cv2.convertScaleAbs(dst)
-    # thr = cv2.bilateralFilter(abs_dst, 3, 50, 50)
-    _, thr = cv2.threshold(abs_dst, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY)
-    thr = cv2.morphologyEx(thr, cv2.MORPH_CLOSE, ker_close, iterations=1)
-    thr = cv2.erode(thr, ker_er, iterations=1)
+    thr = abs_dst
+    thr = cv2.bilateralFilter(abs_dst, 3, 150, 150)
+
     return thr
 
 def sup(frame):
