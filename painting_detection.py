@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from utility import hw3
 
 
 base_hist = None
@@ -12,13 +11,15 @@ def compute_histogram(img, stripes=10):
     """https://www.researchgate.net/publication/310953361_Comparative_study_of_histogram_distance_measures_for_re
     -identification """
 
-    mask = np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8)
+    h = img.shape[0]
+    w = img.shape[1]
+    mask = np.zeros((h, w), dtype=np.uint8)
 
-    every = img.shape[1] // (stripes + 1)
+    every = h // (stripes + 1)
     for i in range(1, stripes + 1):
         mask[i * every, :] = 255
 
-    hist = cv2.calcHist([hw3(img)], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+    hist = cv2.calcHist([img], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
     return hist
 
 
@@ -29,7 +30,6 @@ def init_histogram():
     n = len([name for name in os.listdir('photos/')])
     for i in range(1, n + 1):
         img = cv2.imread("photos/" + str(i) + ".png")
-        img = np.swapaxes(np.swapaxes(img, 0, 2), 1, 2)  # (3, H, W)
 
         hist = compute_histogram(img)
 
@@ -48,12 +48,7 @@ def edge_detection(img):
     grad_x = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=3)
     grad_y = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=3)
     mag = cv2.magnitude(grad_x, grad_y)
-
-    bil = cv2.bilateralFilter(mag, 5, 200, 200)
-
-    edges = np.uint8(bil > 70) * 255
-
-    return edges
+    return mag
 
 
 def check_dims(_w, _h):
@@ -77,18 +72,21 @@ def histogram_distance(roi):
 
 
 def discard_inner_rectangles(box, roi_list, cont_list):
-    x, y, w, h = box
+    x_box, y_box, w_box, h_box = box
     find = False
     restart = True
     while restart:
         restart = False
         for idx, rect in enumerate(roi_list):
+            x_rect, y_rect, w_rect, h_rect = rect
             # nuovo è contenuto in uno già esistente
-            if x >= rect[0] and y >= rect[1] and x + w < rect[0] + rect[2] and y + h < rect[1] + rect[3]:
+            if x_box >= x_rect and y_box >= y_rect and \
+               x_box + w_box < x_rect + w_rect and y_box + h_box < y_rect + h_rect:
                 find = True
                 break
             # uno già esistente è più piccolo di uno nuovo
-            if rect[0] >= x and rect[1] >= y and rect[0] + rect[2] <= x + w and rect[1] + rect[3] <= y + h:
+            if x_rect >= x_box and y_rect >= y_box and \
+               x_rect + w_rect <= x_box + w_box and y_rect + h_rect <= y_box + h_box:
                 roi_list.pop(idx)
                 cont_list.pop(idx)
                 restart = True
@@ -107,7 +105,7 @@ def discard_false_positives(frame, contours):
             continue
 
         # Histogram distance
-        roi = frame[:, y:y + h, x:x + w]
+        roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
         if similarity < 0.38:
             continue
@@ -129,7 +127,7 @@ def update_histogram(roi_list, frame):
 
     for roi in roi_list:
         x, y, w, h = roi
-        example = frame[:, y:y + h, x:x + w]
+        example = frame[y:y + h, x:x + w]
         ex_hist = compute_histogram(example)
         sum_hist += ex_hist
         num_ex += 1
@@ -137,18 +135,25 @@ def update_histogram(roi_list, frame):
 
 
 def detect_paintings(frame):
-    # Blurring
-    gray = cv2.cvtColor(hw3(frame), cv2.COLOR_RGB2GRAY)
+    # Contrast Limited Adaptive Histogram Equalization
+    gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    cl1 = clahe.apply(gray)
+    equal = clahe.apply(gray)
 
-    edges = np.uint8(edge_detection(cl1))
+    # Edge detection
+    edges = edge_detection(equal)
 
-    # Significant contours
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Filtering
+    bil = cv2.bilateralFilter(edges, 5, 200, 200)
+
+    # Thresholding
+    thr = np.uint8(bil > 70) * 255
+
+    # Significant contours 1
+    contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
-    cv2.drawContours(hw3(img_contours), contours, -1, (0, 255, 0), thickness=2)
-    img_contours = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
+    cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
+    img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
 
     # Morphology transformations
     img_morph = img_contours
@@ -156,7 +161,7 @@ def detect_paintings(frame):
     # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
     # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=10)
 
-    # Significant contours
+    # Significant contours 2
     contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Discard false positives
@@ -166,14 +171,14 @@ def detect_paintings(frame):
     if num_ex < 50:
         update_histogram(roi_list, frame)
 
-    draw_contours(edges, cont_list, frame)
+    # draw_contours(thr, cont_list, frame)
     return roi_list, cont_list
 
 
-def draw_contours(img_morph, contours, frame):
+def draw_contours(edges, contours, frame):
     img_contours = np.zeros_like(frame)
-    cv2.drawContours(hw3(img_contours), contours, -1, (0, 255, 0), thickness=2)
-    img_contours = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
+    cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
+    img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
 
-    vertical_concat = np.concatenate((img_morph, img_contours), axis=0)
+    vertical_concat = np.concatenate((edges, img_contours), axis=0)
     cv2.imshow('Contours', cv2.resize(vertical_concat, (int(1600 / 2), 900)))

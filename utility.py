@@ -3,10 +3,6 @@ import cv2
 from matplotlib import pyplot as plt
 
 
-def hw3(image):
-    return np.swapaxes(np.swapaxes(image, 0, 1), 1, 2)
-
-
 def load_video(video_name):
     path = 'videos/'
     video = cv2.VideoCapture(path + video_name)
@@ -50,10 +46,10 @@ def resize_images(paintings):
 def draw(roi_list, paintings, retrieved, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
-        cv2.rectangle(hw3(roi_frame), (rect[0], rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (0, 255, 0),
-                      thickness=2)
+        x, y, w, h = rect
+        cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 255, 0), thickness=2)
 
-    cv2.imshow('Painting Detection', cv2.resize(hw3(roi_frame), (1280, 720)))
+    cv2.imshow('Painting Detection', cv2.resize(roi_frame, (1280, 720)))
 
     small_paintings = resize_images(paintings)
     if len(small_paintings) > 0:
@@ -67,3 +63,8 @@ def draw(roi_list, paintings, retrieved, frame):
 def plot_f_histogram(f_list):
     plt.hist(f_list, 20, [0, 2000])
     plt.show()
+
+
+def skip_frames(video, fps=1):
+    video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)) / fps)
+    return video

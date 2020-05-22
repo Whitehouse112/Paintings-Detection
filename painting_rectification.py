@@ -1,13 +1,11 @@
 import numpy as np
 import cv2
-from utility import hw3
 
 
 errors = 0
 f_tot = 1000
 num_f = 1
 focal_length = 1000
-f_list = []
 
 
 def init_rectification():
@@ -95,8 +93,8 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     w = max(w1, w2)
 
     # image center
-    u0 = frame_shape[2] / 2
-    v0 = frame_shape[1] / 2
+    u0 = frame_shape[1] / 2
+    v0 = frame_shape[0] / 2
 
     ar_vis = w / h  # visible aspect ratio
 
@@ -117,20 +115,15 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     n31, n32, n33 = n3
 
     if n23 != 0 or n33 != 0:
-        # focal lenght (in pixel^2?, 1px = 0.2645833mm)
         f_squared = -((1 / (n23 * n33)) * ((n21 * n31 - (n21 * n33 + n23 * n31) * u0 + n23 * n33 * (u0 ** 2)) + (
                 n22 * n32 - (n22 * n33 + n23 * n32) * v0 + n23 * n33 * (v0 ** 2))))
 
         global focal_length, f_tot, num_f
         if 0 < f_squared < 2000 ** 2 and num_f < 300:
-            f = np.sqrt(f_squared)
+            f = np.sqrt(f_squared)  # focal-lenght in pixels
             f_tot += f
             num_f += 1
             focal_length = f_tot / num_f
-            print("Number of f approximations = ", num_f)
-            print("Detected focal lenght = ", f, "(", f * 0.2645833 / 10, "mm )")
-            print("Medium focal length = ", focal_length, "(", focal_length * 0.2645833 / 10, "mm )")
-            f_list.append(f)
         f = focal_length
 
         A = np.array([[f, 0, u0], [0, f, v0], [0, 0, 1]], dtype=np.float32)
@@ -163,8 +156,8 @@ def rectify_paintings(cont_list, frame):
         epsilon = 0.02 * cv2.arcLength(hull, True)
         approx = cv2.approxPolyDP(hull, epsilon, True)
         img_poly = np.zeros_like(frame)
-        cv2.drawContours(hw3(img_poly), [approx], -1, (0, 255, 0), thickness=5)
-        img_poly = cv2.cvtColor(hw3(img_poly), cv2.COLOR_RGB2GRAY)
+        cv2.drawContours(img_poly, [approx], -1, (0, 255, 0), thickness=5)
+        img_poly = cv2.cvtColor(img_poly, cv2.COLOR_RGB2GRAY)
 
         lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
         if lines is None:
@@ -180,33 +173,38 @@ def rectify_paintings(cont_list, frame):
         vertices = vertices_kmeans(intersections)
 
         tl, tr, bl, br = order_centers(vertices)
-        if bl[1] - tl[1] == 0 or br[1] - tr[1] == 0 or tr[0] - tl[0] == 0 or br[0] - bl[0] == 0:
+        hmax = max(bl[1] - tl[1], br[1] - tr[1])
+        hmin = min(bl[1] - tl[1], br[1] - tr[1])
+        wmax = max(tr[0] - tl[0], br[0] - bl[0])
+        wmin = min(tr[0] - tl[0], br[0] - bl[0])
+        if hmax <= 0 or hmin <= 0 or wmax <= 0 or wmin <= 0:
             print("Painting not found.")
             draw_lines(img_lines, hull, lines, vertices)
             continue
 
         # find aspect ratio
         h, w = compute_aspect_ratio(tl, tr, bl, br, frame.shape)
+        if h > 1080 or w > 1920:
+            print("Painting not found.")
+            draw_lines(img_lines, hull, lines, vertices)
+            continue
 
-        if (0 < h <= 1080) and (0 < w <= 1920):
-            # rectification
-            pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
-            pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
-            m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
-            painting = cv2.warpPerspective(hw3(frame), m, (w, h), flags=cv2.WARP_INVERSE_MAP)
-            
-            h = painting.shape[0]
-            w = painting.shape[1]
-            paintings.append(painting)
+        # rectification
+        pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
+        pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
+        m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
+        painting = cv2.warpPerspective(frame, m, (w, h), flags=cv2.WARP_INVERSE_MAP)
+
+        paintings.append(painting)
 
         # draw_lines(img_lines, approx, lines, vertices)
     # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
-    return paintings, f_list
+    return paintings
 
 
 def draw_lines(img_lines, hull, lines, vertices=None):
     img_lines = np.zeros_like(img_lines)
-    cv2.drawContours(hw3(img_lines), [hull], -1, (255, 0, 0), thickness=2)
+    cv2.drawContours(img_lines, [hull], -1, (255, 0, 0), thickness=2)
     for line in lines:
         rho, theta = line[0]
         a = np.cos(theta)
@@ -217,11 +215,11 @@ def draw_lines(img_lines, hull, lines, vertices=None):
         y1 = int(y0 + 2000 * a)
         x2 = int(x0 - 2000 * (-b))
         y2 = int(y0 - 2000 * a)
-        cv2.line(hw3(img_lines), (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
+        cv2.line(img_lines, (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
     if vertices is not None:
-        cv2.drawContours(hw3(img_lines), np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
+        cv2.drawContours(img_lines, np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
     else:
         global errors
-        cv2.imwrite('errors/error' + str(errors) + '.png', hw3(img_lines))
+        cv2.imwrite('errors/error' + str(errors) + '.png', img_lines)
         errors += 1
-    # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
+    # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))

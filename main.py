@@ -3,7 +3,7 @@ import cv2
 from painting_detection import detect_paintings, init_histogram
 from painting_rectification import rectify_paintings, init_rectification
 from painting_retrieval import retrieve_paintings, init_database
-from utility import draw, load_video, plot_f_histogram
+from utility import draw, load_video  # , skip_frames
 
 
 video_name = 'VIRB0395.MP4'
@@ -15,15 +15,13 @@ init_rectification()
 print("Initializing ORB database...")
 init_database()
 print("Done")
-f_list = []
 
 while video.grab():
-    _, frame = video.retrieve()
-    frame = np.swapaxes(np.swapaxes(frame, 0, 2), 1, 2)  # (3, H, W)
+    _, frame = video.retrieve()  # (H, W, 3)
     print("\nFrame", int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1)
 
     roi_list, cont_list = detect_paintings(np.array(frame))
-    paintings, f_list = rectify_paintings(cont_list, np.array(frame))
+    paintings = rectify_paintings(cont_list, np.array(frame))
     retrieved = retrieve_paintings(paintings)
     
     # Show results
@@ -31,15 +29,13 @@ while video.grab():
     draw(roi_list, paintings, retrieved, np.array(frame))
 
     # Delay & escape-key
-    # video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)))
+    # video = skip_frames(video, fps=1)
     if cv2.waitKey(1) == ord('q'):  # pausa
-        plot_f_histogram(f_list)
         if cv2.waitKey() == ord('q'):  # esci
             break
         else:  # continua
             continue
     # cv2.waitKey()
 
-plot_f_histogram(f_list)
 video.release()
 cv2.destroyAllWindows()
