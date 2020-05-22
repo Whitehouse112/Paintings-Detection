@@ -48,7 +48,11 @@ def edge_detection(img):
     grad_x = cv2.Sobel(img, cv2.CV_32F, 1, 0, ksize=3)
     grad_y = cv2.Sobel(img, cv2.CV_32F, 0, 1, ksize=3)
     mag = cv2.magnitude(grad_x, grad_y)
-    edges = np.uint8(mag > 15) * 255
+
+    bil = cv2.bilateralFilter(mag, 5, 200, 200)
+
+    edges = np.uint8(bil > 70) * 255
+
     return edges
 
 
@@ -135,20 +139,22 @@ def update_histogram(roi_list, frame):
 def detect_paintings(frame):
     # Blurring
     gray = cv2.cvtColor(hw3(frame), cv2.COLOR_RGB2GRAY)
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    cl1 = clahe.apply(gray)
 
-    edges = edge_detection(blur)
+    edges = np.uint8(edge_detection(cl1))
 
     # Significant contours
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(hw3(img_contours), contours, -1, (0, 255, 0), thickness=2)
+    img_contours = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
 
     # Morphology transformations
-    img_morph = cv2.cvtColor(hw3(img_contours), cv2.COLOR_RGB2GRAY)
-    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)  # do not touch
-    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
-    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=5)
+    img_morph = img_contours
+    # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)  # do not touch
+    # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
+    # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=10)
 
     # Significant contours
     contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -160,7 +166,7 @@ def detect_paintings(frame):
     if num_ex < 50:
         update_histogram(roi_list, frame)
 
-    # draw_contours(img_morph, contours, frame)
+    draw_contours(edges, cont_list, frame)
     return roi_list, cont_list
 
 
