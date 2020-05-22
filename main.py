@@ -6,7 +6,7 @@ from painting_retrieval import retrieve_paintings, init_database
 from utility import draw, load_video  # , skip_frames
 
 
-video_name = 'VIRB0395.MP4'
+video_name = 'VIRB0392.MP4'
 video = load_video(video_name)
 
 print("Initializing histogram...")

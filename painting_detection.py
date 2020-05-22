@@ -52,11 +52,11 @@ def edge_detection(img):
 
 
 def check_dims(_w, _h):
-    if _w < 100 or _h < 100:
+    if _w < 150 or _h < 150:
         return False
     if _w >= 1500 or _h > 1080:
         return False
-    if _w / _h > 3.5 or _h / _w > 3.5:
+    if _w / _h > 3 or _h / _w > 3:
         return False
     return True
 
@@ -67,32 +67,55 @@ def histogram_distance(roi):
     hist = compute_histogram(roi)
     retval = cv2.compareHist(base_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
     similarity = 1 - retval
-    # print(similarity)
     return similarity
 
 
-def discard_inner_rectangles(box, roi_list, cont_list):
-    x_box, y_box, w_box, h_box = box
-    find = False
-    restart = True
-    while restart:
-        restart = False
-        for idx, rect in enumerate(roi_list):
-            x_rect, y_rect, w_rect, h_rect = rect
-            # nuovo è contenuto in uno già esistente
-            if x_box >= x_rect and y_box >= y_rect and \
-               x_box + w_box < x_rect + w_rect and y_box + h_box < y_rect + h_rect:
-                find = True
-                break
-            # uno già esistente è più piccolo di uno nuovo
-            if x_rect >= x_box and y_rect >= y_box and \
-               x_rect + w_rect <= x_box + w_box and y_rect + h_rect <= y_box + h_box:
-                roi_list.pop(idx)
-                cont_list.pop(idx)
-                restart = True
-            if restart is True:
-                break
-    return find, roi_list, cont_list
+def bbox_iou(box1, box2):
+    """
+    From Yolo v3
+    Returns the IoU of two bounding boxes
+    """
+    # Get the coordinates of bounding boxes
+    b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[0] + box1[2], box1[1] + box1[3]
+    b2_x1, b2_y1, b2_x2, b2_y2 = box2[0], box2[1], box2[0] + box2[2], box2[1] + box2[3]
+
+    # get the corrdinates of the intersection rectangle
+    inter_rect_x1 = max(b1_x1, b2_x1)
+    inter_rect_y1 = max(b1_y1, b2_y1)
+    inter_rect_x2 = min(b1_x2, b2_x2)
+    inter_rect_y2 = min(b1_y2, b2_y2)
+
+    # Intersection area
+    inter_area = (inter_rect_x2 - inter_rect_x1 + 1) * (inter_rect_y2 - inter_rect_y1 + 1)
+
+    # Union Area
+    b1_area = (b1_x2 - b1_x1 + 1) * (b1_y2 - b1_y1 + 1)
+    b2_area = (b2_x2 - b2_x1 + 1) * (b2_y2 - b2_y1 + 1)
+
+    iou = inter_area / (b1_area + b2_area - inter_area)
+
+    return iou
+
+
+def merge_overlapping(box, box_cont, roi_list, cont_list):
+    for idx, roi in enumerate(roi_list):
+        iou = bbox_iou(box, roi)
+        if iou > 0:
+            print(iou)
+            x = min(box[0], roi[0])
+            y = min(box[1], roi[1])
+            x2 = max(box[0] + box[2], roi[0] + roi[2])
+            y2 = max(box[1] + box[3], roi[1] + roi[3])
+            w = x2 - x
+            h = y2 - y
+            box = (x, y, w, h)
+            box_cont = np.concatenate((np.array(box_cont), np.array(cont_list[idx])), axis=0)
+            roi_list.pop(idx)
+            cont_list.pop(idx)
+            box, box_cont, roi_list, cont_list = merge_overlapping(box, box_cont, roi_list, cont_list)
+            break
+
+    return box, box_cont, roi_list, cont_list
 
 
 def discard_false_positives(frame, contours):
@@ -107,14 +130,17 @@ def discard_false_positives(frame, contours):
         # Histogram distance
         roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        if similarity < 0.38:
-            continue
-        # cv2.imwrite('photos/image.png', HW3(roi))
+        global num_ex
+        if num_ex < 50:
+            if similarity < 0.2:
+                continue
+        else:
+            if similarity < 0.4:
+                continue
+        # cv2.imwrite('photos/image.png', roi)
 
-        # Discard inner rectangles
-        inner, roi_list, cont_list = discard_inner_rectangles(box, roi_list, cont_list)
-        if inner is True:
-            continue
+        # Discard overlapping
+        box, cont, roi_list, cont_list = merge_overlapping(box, cont, roi_list, cont_list)
 
         roi_list.append(box)
         cont_list.append(cont)
@@ -147,7 +173,7 @@ def detect_paintings(frame):
     bil = cv2.bilateralFilter(edges, 5, 200, 200)
 
     # Thresholding
-    thr = np.uint8(bil > 70) * 255
+    thr = np.uint8(bil > 60) * 255
 
     # Significant contours 1
     contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -157,9 +183,9 @@ def detect_paintings(frame):
 
     # Morphology transformations
     img_morph = img_contours
-    # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)  # do not touch
-    # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
-    # img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=10)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)  # do not touch
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=3)
 
     # Significant contours 2
     contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -171,7 +197,7 @@ def detect_paintings(frame):
     if num_ex < 50:
         update_histogram(roi_list, frame)
 
-    # draw_contours(thr, cont_list, frame)
+    # draw_contours(img_morph, cont_list, frame)
     return roi_list, cont_list
 
 
