@@ -81,7 +81,6 @@ def retrieve_paintings(paintings):
             _, des = orb.detectAndCompute(gray, mask)
 
             ranking = findBestMatch(des, reader)
-            print(ranking)
         retrieved.append(ranking)
 
     file.close()
