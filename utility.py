@@ -58,10 +58,10 @@ def draw(roi_list, paintings, retrieved, frame):
                         flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
 
-    small_retrieved = resize_images(retrieved)
-    if len(small_retrieved) > 0:
-        cv2.namedWindow("Retrieved paintings", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-        cv2.imshow("Retrieved paintings", np.concatenate(small_retrieved, axis=1))
+    # small_retrieved = resize_images(retrieved)
+    # if len(small_retrieved) > 0:
+    #     cv2.namedWindow("Retrieved paintings", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
+    #     cv2.imshow("Retrieved paintings", np.concatenate(small_retrieved, axis=1))
 
 
 def plot_f_histogram(f_list):
