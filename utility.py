@@ -49,14 +49,18 @@ def draw(roi_list, paintings, retrieved, frame):
         x, y, w, h = rect
         cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 255, 0), thickness=2)
 
-    cv2.imshow('Painting Detection', cv2.resize(roi_frame, (1280, 720)))
+    cv2.namedWindow("Painting Detection", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
+    cv2.imshow("Painting Detection", cv2.resize(roi_frame, (1280, 720)))
 
     small_paintings = resize_images(paintings)
     if len(small_paintings) > 0:
+        cv2.namedWindow("Painting Rectification",
+                        flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.imshow("Painting Rectification", np.concatenate(small_paintings, axis=1))
 
     small_retrieved = resize_images(retrieved)
     if len(small_retrieved) > 0:
+        cv2.namedWindow("Retrieved paintings", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.imshow("Retrieved paintings", np.concatenate(small_retrieved, axis=1))
 
 

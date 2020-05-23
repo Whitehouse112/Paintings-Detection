@@ -11,15 +11,17 @@ For each video frame:
 
 ### Painting detection
 Predict a ROI for each painting:
-1. Gaussian Blurring
+1. CLAHE (Contrast Limited Adaptive Histogram Equalization)
 2. Edge Detection with Sobel
-3. Morphology Transformations
-4. Significant Contours (cv2.findContours)
-5. Find Bounding Boxes (cv2.boundingRect)
-6. Discard false positives:
+3. Bilateral Filtering
+4. Thresholding
+5. Morphology Transformations
+6. Significant Contours (cv2.findContours)
+7. Find Bounding Boxes (cv2.boundingRect)
+8. Discard false positives:
    - Check dimensions and aspect ration
    - Histogram distance
-   - Discard inner rectangles
+   - Merge overlapping
 
 ### Painting rectification
 Starting from contours found in previous point and considering one contour at a time:

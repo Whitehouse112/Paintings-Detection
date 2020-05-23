@@ -72,7 +72,7 @@ def histogram_distance(roi):
 
 def bbox_iou(box1, box2):
     """
-    From Yolo v3
+    Inspired by Yolo v3
     Returns the IoU of two bounding boxes
     """
     # Get the coordinates of bounding boxes
@@ -86,13 +86,15 @@ def bbox_iou(box1, box2):
     inter_rect_y2 = min(b1_y2, b2_y2)
 
     # Intersection area
-    inter_area = (inter_rect_x2 - inter_rect_x1 + 1) * (inter_rect_y2 - inter_rect_y1 + 1)
+    inter_area = np.clip(inter_rect_x2 - inter_rect_x1 + 1, 0, 1920) * np.clip(inter_rect_y2 - inter_rect_y1 + 1, 0,
+                                                                               1080)
 
     # Union Area
     b1_area = (b1_x2 - b1_x1 + 1) * (b1_y2 - b1_y1 + 1)
     b2_area = (b2_x2 - b2_x1 + 1) * (b2_y2 - b2_y1 + 1)
 
-    iou = inter_area / (b1_area + b2_area - inter_area)
+    # iou = inter_area / (b1_area + b2_area - inter_area)
+    iou = max(inter_area / b1_area, inter_area / b2_area)
 
     return iou
 
@@ -100,8 +102,7 @@ def bbox_iou(box1, box2):
 def merge_overlapping(box, box_cont, roi_list, cont_list):
     for idx, roi in enumerate(roi_list):
         iou = bbox_iou(box, roi)
-        if iou > 0:
-            print(iou)
+        if iou > 0.2:
             x = min(box[0], roi[0])
             y = min(box[1], roi[1])
             x2 = max(box[0] + box[2], roi[0] + roi[2])
@@ -135,7 +136,7 @@ def discard_false_positives(frame, contours):
             if similarity < 0.2:
                 continue
         else:
-            if similarity < 0.4:
+            if similarity < 0.3:
                 continue
         # cv2.imwrite('photos/image.png', roi)
 
@@ -183,8 +184,8 @@ def detect_paintings(frame):
 
     # Morphology transformations
     img_morph = img_contours
-    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)  # do not touch
-    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=5)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=3)
     img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=3)
 
     # Significant contours 2
@@ -207,4 +208,5 @@ def draw_contours(edges, contours, frame):
     img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
 
     vertical_concat = np.concatenate((edges, img_contours), axis=0)
-    cv2.imshow('Contours', cv2.resize(vertical_concat, (int(1600 / 2), 900)))
+    cv2.namedWindow("Contours", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
+    cv2.imshow("Contours", cv2.resize(vertical_concat, (int(1600 / 2), 900)))
