@@ -6,7 +6,7 @@ from painting_retrieval import retrieve_paintings, init_database
 from utility import draw, load_video  # , skip_frames
 
 
-video_name = 'VIRB0392.MP4'
+video_name = 'GOPR5826.MP4'
 video = load_video(video_name)
 
 print("Initializing histogram...")
@@ -27,6 +27,7 @@ while video.grab():
     # Show results
     print("ROI list:", roi_list)
     draw(roi_list, cont_list, paintings, retrieved, np.array(frame))
+    print("\n-----------------------------------")
 
     # Delay & escape-key
     # video = skip_frames(video, fps=1)
