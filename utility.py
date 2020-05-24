@@ -43,14 +43,20 @@ def resize_images(paintings):
     return small_paintings
 
 
-def draw(roi_list, paintings, retrieved, frame):
+def draw(roi_list, cont_list, paintings, retrieved, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
         x, y, w, h = rect
         cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 255, 0), thickness=2)
 
+    mask = np.zeros_like(frame)
+    for cont in cont_list:
+        cv2.drawContours(mask, [cont], -1, (255, 255, 255), thickness=cv2.FILLED)
+    segm_frame = np.uint8(mask == 255) * frame
+
+    vertical_concat = np.concatenate((roi_frame, segm_frame), axis=0)
     cv2.namedWindow("Painting Detection", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-    cv2.imshow("Painting Detection", cv2.resize(roi_frame, (1280, 720)))
+    cv2.imshow("Painting Detection", cv2.resize(vertical_concat, (int(1600 / 2), 900)))
 
     small_paintings = resize_images(paintings)
     if len(small_paintings) > 0:

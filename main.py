@@ -26,7 +26,7 @@ while video.grab():
     
     # Show results
     print("ROI list:", roi_list)
-    draw(roi_list, paintings, retrieved, np.array(frame))
+    draw(roi_list, cont_list, paintings, retrieved, np.array(frame))
 
     # Delay & escape-key
     # video = skip_frames(video, fps=1)

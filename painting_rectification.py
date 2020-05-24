@@ -151,10 +151,8 @@ def rectify_paintings(cont_list, frame):
     paintings = []
     img_lines = np.zeros_like(frame)
     for contour in cont_list:
-        hull = cv2.convexHull(contour)
-
-        epsilon = 0.02 * cv2.arcLength(hull, True)
-        approx = cv2.approxPolyDP(hull, epsilon, True)
+        epsilon = 0.02 * cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, epsilon, True)
         img_poly = np.zeros_like(frame)
         cv2.drawContours(img_poly, [approx], -1, (0, 255, 0), thickness=5)
         img_poly = cv2.cvtColor(img_poly, cv2.COLOR_RGB2GRAY)
@@ -167,7 +165,7 @@ def rectify_paintings(cont_list, frame):
         intersections = find_intersections(lines)
         if len(intersections) < 4:
             print("Painting not found.")
-            draw_lines(img_lines, hull, lines)
+            draw_lines(img_lines, contour, lines)
             continue
 
         vertices = vertices_kmeans(intersections)
@@ -177,17 +175,14 @@ def rectify_paintings(cont_list, frame):
         hmin = min(bl[1] - tl[1], br[1] - tr[1])
         wmax = max(tr[0] - tl[0], br[0] - bl[0])
         wmin = min(tr[0] - tl[0], br[0] - bl[0])
-        if hmax <= 0 or hmin <= 0 or wmax <= 0 or wmin <= 0:
+        frame_h, frame_w = frame.shape[0:2]
+        if not(20 <= hmax <= frame_h and 20 <= hmin <= frame_h and 20 <= wmax <= frame_w and 20 <= wmin <= frame_w):
             print("Painting not found.")
-            draw_lines(img_lines, hull, lines, vertices)
+            draw_lines(img_lines, contour, lines, vertices)
             continue
 
         # find aspect ratio
         h, w = compute_aspect_ratio(tl, tr, bl, br, frame.shape)
-        if h > 1080 or w > 1920:
-            print("Painting not found.")
-            draw_lines(img_lines, hull, lines, vertices)
-            continue
 
         # rectification
         pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
@@ -197,14 +192,14 @@ def rectify_paintings(cont_list, frame):
 
         paintings.append(painting)
 
-        # draw_lines(img_lines, approx, lines, vertices)
-    # cv2.imshow("Lines", cv2.resize(hw3(img_lines), (1280, 720)))
+        draw_lines(img_lines, contour, lines, vertices)
+    # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))
     return paintings
 
 
-def draw_lines(img_lines, hull, lines, vertices=None):
-    img_lines = np.zeros_like(img_lines)
-    cv2.drawContours(img_lines, [hull], -1, (255, 0, 0), thickness=2)
+def draw_lines(img_lines, contour, lines, vertices=None):
+    # img_lines = np.zeros_like(img_lines)
+    cv2.drawContours(img_lines, [contour], -1, (255, 0, 0), thickness=2)
     for line in lines:
         rho, theta = line[0]
         a = np.cos(theta)
@@ -215,7 +210,7 @@ def draw_lines(img_lines, hull, lines, vertices=None):
         y1 = int(y0 + 2000 * a)
         x2 = int(x0 - 2000 * (-b))
         y2 = int(y0 - 2000 * a)
-        cv2.line(img_lines, (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
+        # cv2.line(img_lines, (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
     if vertices is not None:
         cv2.drawContours(img_lines, np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
     else:

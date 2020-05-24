@@ -6,10 +6,9 @@ Final project for (Computer) Vision and Cognitive System
 - opencv-python
 
 ## Pipeline
-
 For each video frame:
 
-### Painting detection
+### Painting detection & segmentation
 Predict a ROI for each painting:
 1. CLAHE (Contrast Limited Adaptive Histogram Equalization)
 2. Edge Detection with Sobel
@@ -17,22 +16,23 @@ Predict a ROI for each painting:
 4. Thresholding
 5. Morphology Transformations
 6. Significant Contours (cv2.findContours)
-7. Find Bounding Boxes (cv2.boundingRect)
+7. Contours checking:
+   - Find Bounding Boxes (cv2.boundingRect)
+   - Merge overlapping
+   - Convex hull
 8. Discard false positives:
    - Check dimensions and aspect ration
-   - Histogram distance
-   - Merge overlapping
+   - Histogram distance & update
 
 ### Painting rectification
 Starting from contours found in previous point and considering one contour at a time:
-1. Convex hull
-2. ApproxPolyDP
-3. Hough Lines
-4. Find lines intersections
-5. K-means to find average vertices
-6. Order vertices
-7. Compute aspect-ratio
-8. Warp perspective
+1. ApproxPolyDP
+2. Hough Lines
+3. Find lines intersections
+4. K-means to find average vertices
+5. Order vertices
+6. Compute aspect-ratio
+7. Warp perspective
 
 ### Painting retrieval
 Match each detected painting to the paintings DB:

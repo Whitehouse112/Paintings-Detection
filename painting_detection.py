@@ -119,19 +119,30 @@ def merge_overlapping(box, box_cont, roi_list, cont_list):
     return box, box_cont, roi_list, cont_list
 
 
-def discard_false_positives(frame, contours):
+def contours_checking(frame, contours):
+    global num_ex
+
     roi_list = []
     cont_list = []
     for cont in contours:
         x, y, w, h = cv2.boundingRect(cont)  # Bounding boxes
         box = (x, y, w, h)
+
+        # Merge overlapping
+        box, cont, roi_list, cont_list = merge_overlapping(box, cont, roi_list, cont_list)
+
+        # Convex hull
+        cont = cv2.convexHull(cont)
+
+        # Discard false positives
+
+        # Check dimensions
         if not check_dims(w, h):
             continue
 
         # Histogram distance
         roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        global num_ex
         if num_ex < 50:
             if similarity < 0.2:
                 continue
@@ -140,11 +151,11 @@ def discard_false_positives(frame, contours):
                 continue
         # cv2.imwrite('photos/image.png', roi)
 
-        # Discard overlapping
-        box, cont, roi_list, cont_list = merge_overlapping(box, cont, roi_list, cont_list)
-
         roi_list.append(box)
         cont_list.append(cont)
+
+    if num_ex < 50:
+        update_histogram(roi_list, frame)
 
     return roi_list, cont_list
 
@@ -190,15 +201,13 @@ def detect_paintings(frame):
 
     # Significant contours 2
     contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    img_contours = np.zeros_like(frame)
+    cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
+    # img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
 
-    # Discard false positives
-    roi_list, cont_list = discard_false_positives(frame, contours)
+    roi_list, cont_list = contours_checking(frame, contours)
 
-    global num_ex
-    if num_ex < 50:
-        update_histogram(roi_list, frame)
-
-    # draw_contours(img_morph, cont_list, frame)
+    # draw_contours(img_contours, cont_list, frame)
     return roi_list, cont_list
 
 
