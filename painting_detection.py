@@ -51,10 +51,10 @@ def edge_detection(img):
     return mag
 
 
-def check_dims(_w, _h):
-    if _w < 150 or _h < 150:
+def check_dims(_w, _h, frame_h, frame_w):
+    if _w < 100 or _h < 100:
         return False
-    if _w >= 1500 or _h > 1080:
+    if _w > frame_w or _h > frame_h:
         return False
     if _w / _h > 3 or _h / _w > 3:
         return False
@@ -120,16 +120,14 @@ def merge_overlapping(box, box_cont, roi_list, cont_list):
 
 
 def contours_checking(frame, contours):
-    global num_ex
-
     roi_list = []
     cont_list = []
     for cont in contours:
-        x, y, w, h = cv2.boundingRect(cont)  # Bounding boxes
-        box = (x, y, w, h)
+        box = cv2.boundingRect(cont)  # Bounding boxes
 
         # Merge overlapping
         box, cont, roi_list, cont_list = merge_overlapping(box, cont, roi_list, cont_list)
+        x, y, w, h = box
 
         # Convex hull
         cont = cv2.convexHull(cont)
@@ -137,23 +135,20 @@ def contours_checking(frame, contours):
         # Discard false positives
 
         # Check dimensions
-        if not check_dims(w, h):
+        if not check_dims(w, h, frame.shape[0], frame.shape[1]):
             continue
 
         # Histogram distance
         roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        if num_ex < 50:
-            if similarity < 0.2:
-                continue
-        else:
-            if similarity < 0.3:
-                continue
-        # cv2.imwrite('photos/image.png', roi)
+        if similarity < 0.3:
+            continue
+        # cv2.imwrite('photos/image' + str(n) + '.png', roi)
 
         roi_list.append(box)
         cont_list.append(cont)
 
+    global num_ex
     if num_ex < 50:
         update_histogram(roi_list, frame)
 

@@ -26,10 +26,10 @@ Predict a ROI for each painting:
 
 ### Painting rectification
 Starting from contours found in previous point and considering one contour at a time:
-1. ApproxPolyDP
-2. Hough Lines
-3. Find lines intersections
-4. K-means to find average vertices
+1. Polygonal approximation (cv2.approxPolyDP)
+2. Find lines with Hough transform
+3. Compute lines intersections
+4. Average vertices with K-Means
 5. Order vertices
 6. Compute aspect-ratio
 7. Warp perspective

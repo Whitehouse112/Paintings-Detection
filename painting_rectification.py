@@ -147,44 +147,75 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     return h, w
 
 
+def check_vertices(tl, tr, bl, br, frame_h, frame_w):
+    # tl[0] = np.clip(tl[0], -frame_w / 2, frame_w)
+    # tl[1] = np.clip(tl[1], -frame_h / 2, frame_h)
+    tl[0] = np.clip(tl[0], 0, frame_w)
+    tl[1] = np.clip(tl[1], 0, frame_h)
+
+    # tr[0] = np.clip(tr[0], 0, frame_w + frame_w / 2)
+    # tr[1] = np.clip(tr[1], -frame_h / 2, frame_h)
+    tr[0] = np.clip(tr[0], 0, frame_w)
+    tr[1] = np.clip(tr[1], 0, frame_h)
+
+    # bl[0] = np.clip(bl[0], -frame_w / 2, frame_w)
+    # bl[1] = np.clip(bl[1], 0, frame_h + frame_h / 2)
+    bl[0] = np.clip(bl[0], 0, frame_w)
+    bl[1] = np.clip(bl[1], 0, frame_h)
+
+    # br[0] = np.clip(br[0], 0, frame_w + frame_w / 2)
+    # br[1] = np.clip(br[1], 0, frame_h + frame_h / 2)
+    br[0] = np.clip(br[0], 0, frame_w)
+    br[1] = np.clip(br[1], 0, frame_h)
+
+    return tl, tr, bl, br
+
+
 def rectify_paintings(cont_list, frame):
     paintings = []
     img_lines = np.zeros_like(frame)
     for contour in cont_list:
+
+        # Polygonal approximation
         epsilon = 0.02 * cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, epsilon, True)
         img_poly = np.zeros_like(frame)
         cv2.drawContours(img_poly, [approx], -1, (0, 255, 0), thickness=5)
         img_poly = cv2.cvtColor(img_poly, cv2.COLOR_RGB2GRAY)
 
+        # Finding lines with Hough transform
         lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
         if lines is None:
             print("Painting not found.")
             continue
 
+        # Lines intersections
         intersections = find_intersections(lines)
         if len(intersections) < 4:
             print("Painting not found.")
-            draw_lines(img_lines, contour, lines)
+            draw_lines(img_lines, approx, lines, error=True)
             continue
 
+        # Average vertices with K-Means
         vertices = vertices_kmeans(intersections)
 
+        # Ordering vertices
         tl, tr, bl, br = order_centers(vertices)
+        frame_h, frame_w = frame.shape[0:2]
+        tl, tr, bl, br = check_vertices(tl, tr, bl, br, frame_h, frame_w)
         hmax = max(bl[1] - tl[1], br[1] - tr[1])
         hmin = min(bl[1] - tl[1], br[1] - tr[1])
         wmax = max(tr[0] - tl[0], br[0] - bl[0])
         wmin = min(tr[0] - tl[0], br[0] - bl[0])
-        frame_h, frame_w = frame.shape[0:2]
         if not(20 <= hmax <= frame_h and 20 <= hmin <= frame_h and 20 <= wmax <= frame_w and 20 <= wmin <= frame_w):
             print("Painting not found.")
-            draw_lines(img_lines, contour, lines, vertices)
+            draw_lines(img_lines, approx, lines, vertices, error=True)
             continue
 
-        # find aspect ratio
+        # Compute aspect-ratio
         h, w = compute_aspect_ratio(tl, tr, bl, br, frame.shape)
 
-        # rectification
+        # Warp perspective
         pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
         pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
         m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
@@ -192,13 +223,14 @@ def rectify_paintings(cont_list, frame):
 
         paintings.append(painting)
 
-        draw_lines(img_lines, contour, lines, vertices)
+        # draw_lines(img_lines, approx, lines, vertices)
+    # cv2.namedWindow("Lines", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))
     return paintings
 
 
-def draw_lines(img_lines, contour, lines, vertices=None):
-    # img_lines = np.zeros_like(img_lines)
+def draw_lines(img_lines, contour, lines, vertices=None, error=False):
+    img_lines = np.zeros_like(img_lines)
     cv2.drawContours(img_lines, [contour], -1, (255, 0, 0), thickness=2)
     for line in lines:
         rho, theta = line[0]
@@ -210,11 +242,12 @@ def draw_lines(img_lines, contour, lines, vertices=None):
         y1 = int(y0 + 2000 * a)
         x2 = int(x0 - 2000 * (-b))
         y2 = int(y0 - 2000 * a)
-        # cv2.line(img_lines, (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
+        cv2.line(img_lines, (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
     if vertices is not None:
         cv2.drawContours(img_lines, np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
-    else:
+    if error is True:
         global errors
         cv2.imwrite('errors/error' + str(errors) + '.png', img_lines)
         errors += 1
+    # cv2.namedWindow("Lines", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))
