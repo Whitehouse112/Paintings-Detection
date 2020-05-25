@@ -23,11 +23,17 @@ def init_database():
     db = tmp
 
 
-def findName(image_name, file):
-    for row in file:
+def findName(image_name):
+    file = open('files/data.csv', 'r')
+    reader = csv.reader(file)
+
+    for row in reader:
         if image_name in row:
+            file.close()
             return row[0]
 
+    file.close()
+    return "No name"
 
 def createMask(painting):
     mask = np.zeros_like(painting, dtype=np.uint8)
@@ -41,11 +47,10 @@ def createMask(painting):
     return mask
 
 
-def findBestMatch(painting_descriptor, file):
-    matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
-    
+def findBestMatch(painting_descriptor):
     ranking = {}
 
+    matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
     #db is a list in which each element is a list itself structured as below:
     #[RGBimage, (keyPoints, descriptors), painting_name]
     for img in db:
@@ -56,8 +61,8 @@ def findBestMatch(painting_descriptor, file):
                 good_points.append(m) 
         if len(good_points) != 0:
             percentage = len(good_points) / len(matches) * 100
-            if percentage > 5:
-                ranking[findName(img[2], file)] = (img[0], percentage)      
+            #if percentage > 2:
+            ranking[findName(img[2])] = (img[0], percentage)      
 
     order_ranking = {k:v for k,v in sorted(ranking.items(), key=lambda item:item[1][1], reverse=True)}
     return order_ranking
@@ -66,11 +71,7 @@ def findBestMatch(painting_descriptor, file):
 def retrieve_paintings(paintings):
     retrieved = []
 
-    file = open('files/data.csv', 'r')
-    reader = csv.reader(file)
-
     for painting in paintings:
-        ranking = {}
         gray = cv2.cvtColor(painting, cv2.COLOR_RGB2GRAY)
         
         #Check painiting dimensions in order to avoid orb error: "(-215) Assertion failed, inv_scale_x > 0"
@@ -80,10 +81,9 @@ def retrieve_paintings(paintings):
             mask = createMask(gray)
             _, des = orb.detectAndCompute(gray, mask)
 
-            ranking = findBestMatch(des, reader)
+            ranking = findBestMatch(des)
         retrieved.append(ranking)
 
-    file.close()
     #retrieved is a dictionaries list, each dictionary is structured as below:
     #{painting_name: (painting_image, accuracy_percentage)}
     return retrieved

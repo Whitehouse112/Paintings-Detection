@@ -14,7 +14,7 @@ def load_video(video_name):
 
 def fill(paintings):
     size = int(1280 / 4)
-    while((2 - len(paintings)) != 0):
+    while((3 - len(paintings)) != 0):
         paintings.append(np.zeros((size, size, 3), dtype=np.uint8))
     return paintings
 
@@ -47,6 +47,30 @@ def resize_images(paintings):
     return small_paintings
 
 
+def concatenate_rectified_retrieval(paintings, retrieved):
+    horizontal = None
+    print("\nDatabase matches:")
+    for i, small_painting in enumerate(paintings):
+        print(f"Painting {i+1}")
+        ranking = []
+        for k, v in retrieved[i].items():
+            print(f"{len(ranking)+1} - {k}: {round(v[1])}%")
+            ranking.append(v[0])
+            if len(ranking) == 3:
+                break
+        if len(ranking) == 0:
+            print("No matches found")
+        small_retrieved = resize_images(ranking)
+        if len(small_retrieved) < 3:
+            small_retrieved = fill(small_retrieved)
+        vertical = np.vstack((small_painting, small_retrieved[0], small_retrieved[1], small_retrieved[2]))
+        if horizontal is None:
+            horizontal = vertical
+        else:
+            horizontal = np.hstack((horizontal, vertical))
+    return horizontal
+
+
 def draw(roi_list, cont_list, paintings, retrieved, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
@@ -64,33 +88,11 @@ def draw(roi_list, cont_list, paintings, retrieved, frame):
 
     small_paintings = resize_images(paintings)
     if len(small_paintings) > 0:
-        horizontal = None
-        print("\nDatabase matches:")
-        for i, sp in enumerate(small_paintings):
-            print(f"Painting {i+1}")
-            ranking = []
-            for k, v in retrieved[i].items():
-                print(f"{len(ranking)+1} - {k}: {round(v[1])}%")
-                ranking.append(v[0])
-                if len(ranking) == 3:
-                    break
-            if len(ranking) == 0:
-                print("No matches found")
-            small_retrieved = resize_images(ranking)
-            if len(small_retrieved) < 2:
-                small_retrieved = fill(small_retrieved)
-            # cv2.imshow("test", sp)
-            # cv2.imshow("test1", small_retrieved[0])
-            # cv2.imshow("test2", small_retrieved[1])
-            vertical = np.vstack((sp, small_retrieved[0], small_retrieved[1]))
-            if horizontal is None:
-                horizontal = vertical
-            else:
-                horizontal = np.hstack((horizontal, vertical))
-
+        concatenate = concatenate_rectified_retrieval(small_paintings, retrieved)
+        size=(int(len(small_paintings)*330/1.5), int(1280/1.5))
         cv2.namedWindow("Painting Rectification and Retrieval",
                         flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-        cv2.imshow("Painting Rectification and Retrieval", horizontal)
+        cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, size))
 
 
 def plot_f_histogram(f_list):
