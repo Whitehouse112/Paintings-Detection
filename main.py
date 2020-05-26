@@ -34,11 +34,8 @@ while video.grab():
 
     # Delay & escape-key
     # video = skip_frames(video, fps=1)
-    if cv2.waitKey(1) == ord('q'):  # pausa
-        if cv2.waitKey() == ord('q'):  # esci
-            break
-        else:  # continua
-            continue
+    if cv2.waitKey(1) == ord('q'):
+        break
     # cv2.waitKey()
 
 video.release()
