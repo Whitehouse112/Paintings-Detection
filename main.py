@@ -3,7 +3,7 @@ import cv2
 from painting_detection import detect_paintings, init_histogram
 from painting_rectification import rectify_paintings, init_rectification
 from painting_retrieval import retrieve_paintings, init_database, read_file
-from utility import draw, load_video, skip_frames
+from utility import draw, load_video  # , skip_frames
 
 
 video_name = 'GOPR5826.MP4'

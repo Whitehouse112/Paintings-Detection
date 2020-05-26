@@ -13,7 +13,7 @@ def load_video(video_name):
 
 def fill(paintings):
     size = int(1280 / 4)
-    while (3 - len(paintings)) != 0:
+    while len(paintings) < 3:
         paintings.append(np.zeros((size, size, 3), dtype=np.uint8))
     return paintings
 

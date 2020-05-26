@@ -74,6 +74,7 @@ def bbox_iou(box1, box2):
     """
     Inspired by Yolo v3
     Returns the IoU of two bounding boxes
+    (Bounding Box Intersection over Union)
     """
     # Get the coordinates of bounding boxes
     b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[0] + box1[2], box1[1] + box1[3]
