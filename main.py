@@ -36,7 +36,6 @@ while video.grab():
 
     # Delay & escape-key
     # video = skip_frames(video, fps=1)
-    video.set(cv2.CAP_PROP_POS_FRAMES, 304)
     if cv2.waitKey(2) == ord('q'):
         break
     # cv2.waitKey()
