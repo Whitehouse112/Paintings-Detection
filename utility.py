@@ -89,10 +89,9 @@ def draw(roi_list, cont_list, paintings, retrieved, frame):
     small_paintings = resize_images(paintings)
     if len(small_paintings) > 0:
         concatenate = concatenate_rectified_retrieval(small_paintings, retrieved)
-        size=(int(len(small_paintings)*330/1.5), int(1280/1.5))
         cv2.namedWindow("Painting Rectification and Retrieval",
                         flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-        cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, size))
+        cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, None, fx=0.6, fy=0.6))
 
 
 def plot_f_histogram(f_list):
