@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 
 
 def load_video(video_name):
@@ -14,9 +13,10 @@ def load_video(video_name):
 
 def fill(paintings):
     size = int(1280 / 4)
-    while((3 - len(paintings)) != 0):
+    while (3 - len(paintings)) != 0:
         paintings.append(np.zeros((size, size, 3), dtype=np.uint8))
     return paintings
+
 
 def resize_images(paintings):
     small_paintings = []
@@ -83,8 +83,9 @@ def draw(roi_list, cont_list, paintings, retrieved, frame):
     segm_frame = np.uint8(mask == 255) * frame
 
     vertical_concat = np.concatenate((roi_frame, segm_frame), axis=0)
-    cv2.namedWindow("Painting Detection", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-    cv2.imshow("Painting Detection", cv2.resize(vertical_concat, (int(1600 / 2), 900)))
+    cv2.namedWindow("Painting Detection & Segmentation",
+                    flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
+    cv2.imshow("Painting Detection & Segmentation", cv2.resize(vertical_concat, (int(1600 / 2), 900)))
 
     small_paintings = resize_images(paintings)
     if len(small_paintings) > 0:
@@ -92,11 +93,6 @@ def draw(roi_list, cont_list, paintings, retrieved, frame):
         cv2.namedWindow("Painting Rectification and Retrieval",
                         flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
         cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, None, fx=0.6, fy=0.6))
-
-
-def plot_f_histogram(f_list):
-    plt.hist(f_list, 20, [0, 2000])
-    plt.show()
 
 
 def skip_frames(video, fps=1):

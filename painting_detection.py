@@ -119,7 +119,7 @@ def merge_overlapping(box, box_cont, roi_list, cont_list):
     return box, box_cont, roi_list, cont_list
 
 
-def contours_checking(frame, contours):
+def contours_refining(frame, contours):
     roi_list = []
     cont_list = []
     for cont in contours:
@@ -200,7 +200,7 @@ def detect_paintings(frame):
     cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
     # img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
 
-    roi_list, cont_list = contours_checking(frame, contours)
+    roi_list, cont_list = contours_refining(frame, contours)
 
     # draw_contours(img_contours, cont_list, frame)
     return roi_list, cont_list

@@ -16,7 +16,7 @@ Predict a ROI for each painting:
 4. Thresholding
 5. Morphology Transformations
 6. Significant Contours (cv2.findContours)
-7. Contours checking:
+7. Contours refining:
    - Find Bounding Boxes (cv2.boundingRect)
    - Merge overlapping
    - Convex hull
