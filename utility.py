@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from painting_retrieval import paintings_db, data_csv
 
 
 def load_video(video_name):
@@ -9,13 +10,6 @@ def load_video(video_name):
         print("File", path + video_name, "not found.")
         exit(1)
     return video
-
-
-def fill(paintings):
-    size = int(1280 / 4)
-    while len(paintings) < 3:
-        paintings.append(np.zeros((size, size, 3), dtype=np.uint8))
-    return paintings
 
 
 def resize_images(paintings):
@@ -47,31 +41,44 @@ def resize_images(paintings):
     return small_paintings
 
 
-def concatenate_rectified_retrieval(paintings, retrieved):
-    horizontal = None
+def concatenate_rectified_retrieval(rect_concat, retrieved):
+    retr_img0 = get_retrieved_img(retrieved, ranking=0)
+    retr_img1 = get_retrieved_img(retrieved, ranking=1)
+    retr_img2 = get_retrieved_img(retrieved, ranking=2)
+
+    retr_img0 = resize_images(retr_img0)
+    retr_img1 = resize_images(retr_img1)
+    retr_img2 = resize_images(retr_img2)
+
+    retr_concat0 = np.concatenate(retr_img0, axis=1)
+    retr_concat1 = np.concatenate(retr_img1, axis=1)
+    retr_concat2 = np.concatenate(retr_img2, axis=1)
+
+    concatenate = np.concatenate((rect_concat, retr_concat0, retr_concat1, retr_concat2), axis=0)
+    return concatenate
+
+
+def get_retrieved_img(retrieved, ranking=0):
+    retr_img = []
+    retr_names = retrieved[:, ranking, 0]
+    for name in retr_names:
+        img = paintings_db[name]
+        retr_img.append(img)
+    return retr_img
+
+
+def print_ranking(retrieved):
     print("\nDatabase matches:")
-    for i, small_painting in enumerate(paintings):
-        print(f"Painting {i+1}")
-        ranking = []
-        for k, v in retrieved[i].items():
-            print(f"{len(ranking)+1} - {k}: {round(v[1])}%")
-            ranking.append(v[0])
-            if len(ranking) == 3:
-                break
-        if len(ranking) == 0:
-            print("No matches found")
-        small_retrieved = resize_images(ranking)
-        if len(small_retrieved) < 3:
-            small_retrieved = fill(small_retrieved)
-        vertical = np.vstack((small_painting, small_retrieved[0], small_retrieved[1], small_retrieved[2]))
-        if horizontal is None:
-            horizontal = vertical
-        else:
-            horizontal = np.hstack((horizontal, vertical))
-    return horizontal
+    for i, retr in enumerate(retrieved):
+        print(f"Painting {i + 1}")
+        for j, match in zip(range(3), retr):
+            img_name, accuracy = match
+            accuracy = round(np.float32(accuracy))
+            title, author, _ = data_csv[img_name]
+            print(f"{j + 1} - {title}, {author}: {accuracy}%")
 
 
-def draw(roi_list, cont_list, paintings, retrieved, frame):
+def draw(roi_list, cont_list, rectified, retrieved, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
         x, y, w, h = rect
@@ -87,12 +94,19 @@ def draw(roi_list, cont_list, paintings, retrieved, frame):
                     flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     cv2.imshow("Painting Detection & Segmentation", cv2.resize(vertical_concat, (int(1600 / 2), 900)))
 
-    small_paintings = resize_images(paintings)
-    if len(small_paintings) > 0:
-        concatenate = concatenate_rectified_retrieval(small_paintings, retrieved)
-        cv2.namedWindow("Painting Rectification and Retrieval",
-                        flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-        cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, None, fx=0.6, fy=0.6))
+    if len(rectified) == 0:
+        return
+    small_rectified = resize_images(rectified)
+    rect_concat = np.concatenate(small_rectified, axis=1)
+
+    if len(retrieved) > 0:
+        concatenate = concatenate_rectified_retrieval(rect_concat, retrieved)
+    else:
+        concatenate = rect_concat
+
+    cv2.namedWindow("Painting Rectification and Retrieval",
+                    flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
+    cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, None, fx=0.6, fy=0.6))
 
 
 def skip_frames(video, fps=1):

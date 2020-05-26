@@ -6,7 +6,7 @@ from painting_retrieval import retrieve_paintings, init_database, read_file
 from utility import draw, load_video, print_ranking  # , skip_frames
 
 
-video_name = 'GOPR5826.MP4'
+video_name = 'VIRB0392.MP4'
 video = load_video(video_name)
 
 print('\n')
@@ -36,6 +36,7 @@ while video.grab():
 
     # Delay & escape-key
     # video = skip_frames(video, fps=1)
+    video.set(cv2.CAP_PROP_POS_FRAMES, 304)
     if cv2.waitKey(2) == ord('q'):
         break
     # cv2.waitKey()
