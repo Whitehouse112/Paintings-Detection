@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 from painting_detection import detect_paintings, init_histogram
 from painting_rectification import rectify_paintings, init_rectification
-from painting_retrieval import retrieve_paintings, init_database
-from utility import draw, load_video  # , skip_frames
+from painting_retrieval import retrieve_paintings, init_database, read_file
+from utility import draw, load_video, skip_frames
 
 
 video_name = 'GOPR5826.MP4'
@@ -14,6 +14,8 @@ init_histogram()
 init_rectification()
 print("Initializing ORB database...")
 init_database()
+print("Reading Data from csv file...")
+read_file()
 print("Done")
 
 while video.grab():
@@ -25,8 +27,8 @@ while video.grab():
     room, retrieved = retrieve_paintings(paintings)
     
     # Show results
-    print("ROI list:", roi_list)
-    print("Room:", room)
+    print("\nROI list:", roi_list)
+    print("\nRoom:", room)
     draw(roi_list, cont_list, paintings, retrieved, np.array(frame))
     print("\n-----------------------------------")
 

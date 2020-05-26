@@ -3,6 +3,7 @@ import numpy as np
 import csv
 
 db = []
+data = []
 
 def init_database():
     import os
@@ -23,21 +24,33 @@ def init_database():
     db = tmp
 
 
-def findRoom(painting_name):
+def read_file():
+    global data
+    
     try:
         file = open('files/data.csv', 'r')
     except:
         print("File data.csv not found.")
-        exit(1)
-    
+        exit(1)   
     reader = csv.reader(file)
     for row in reader:
-        if painting_name in row:
-            file.close()
-            return row[2]
+        data.append(row)
 
     file.close()
+
+
+def findRoom(painting_name):
+    for row in data:
+        if painting_name in row:
+            return row[2]
     return 0
+
+
+def findName(image_name):
+    for row in data:
+        if image_name in row:
+            return row[0]
+    return "No name"
 
 
 def findBestRoom(retrieved):
@@ -46,8 +59,10 @@ def findBestRoom(retrieved):
 
     for d in retrieved:
         for v in d.values():
+            #Save the room only if the accuracy percentage is over the threshold
+            if v[1] > 5:
+                rooms.append(v[2])
             #The first element is the best one: we can stop the for loop after the first iteration
-            rooms.append(v[2])
             break
     for i in rooms:
         if not i in tmp:
@@ -55,25 +70,11 @@ def findBestRoom(retrieved):
         else:
             tmp[i] += 1
     
-    room = max(tmp.items(), key=lambda x: x[1])
-    return room[0]
-
-
-def findName(image_name):
-    try:
-        file = open('files/data.csv', 'r')
-    except:
-        print("File data.csv not found.")
-        exit(1)
-
-    reader = csv.reader(file)
-    for row in reader:
-        if image_name in row:
-            file.close()
-            return row[0]
-
-    file.close()
-    return "No name"
+    if len(rooms) != 0:
+        room = max(tmp.items(), key=lambda x: x[1])
+        return room[0]
+    else:
+        return "Unable to find room"
 
 
 def firstElements(dictionary, number_of_elements):
@@ -116,7 +117,10 @@ def findBestMatch(painting_descriptor):
             ranking[findName(img[2])] = (img[0], percentage, findRoom(img[2]))
 
     order_ranking = {k:v for k,v in sorted(ranking.items(), key=lambda item:item[1][1], reverse=True)}
-    return firstElements(order_ranking, 5)
+    if len(order_ranking) > 5:
+        return firstElements(order_ranking, 5)
+    else:
+        return order_ranking
 
 
 def retrieve_paintings(paintings):
