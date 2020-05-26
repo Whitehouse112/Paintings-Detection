@@ -172,7 +172,7 @@ def check_vertices(tl, tr, bl, br, frame_h, frame_w):
 
 
 def rectify_paintings(cont_list, frame):
-    paintings = []
+    rectified = []
     img_lines = np.zeros_like(frame)
     for contour in cont_list:
 
@@ -186,13 +186,13 @@ def rectify_paintings(cont_list, frame):
         # Finding lines with Hough transform
         lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
         if lines is None:
-            print("Painting not found.")
+            # print("Painting not found.")
             continue
 
         # Lines intersections
         intersections = find_intersections(lines)
         if len(intersections) < 4:
-            print("Painting not found.")
+            # print("Painting not found.")
             draw_lines(img_lines, approx, lines, error=True)
             continue
 
@@ -208,7 +208,7 @@ def rectify_paintings(cont_list, frame):
         wmax = max(tr[0] - tl[0], br[0] - bl[0])
         wmin = min(tr[0] - tl[0], br[0] - bl[0])
         if not(20 <= hmax <= frame_h and 20 <= hmin <= frame_h and 20 <= wmax <= frame_w and 20 <= wmin <= frame_w):
-            print("Painting not found.")
+            # print("Painting not found.")
             draw_lines(img_lines, approx, lines, vertices, error=True)
             continue
 
@@ -219,14 +219,14 @@ def rectify_paintings(cont_list, frame):
         pts_src = np.array([[0, 0], [w, 0], [0, h], [w, h]], dtype=np.float32)
         pts_dst = np.array([tl, tr, bl, br], dtype=np.float32)
         m, _ = cv2.findHomography(pts_src, pts_dst, method=cv2.RANSAC)
-        painting = cv2.warpPerspective(frame, m, (w, h), flags=cv2.WARP_INVERSE_MAP)
+        warped = cv2.warpPerspective(frame, m, (w, h), flags=cv2.WARP_INVERSE_MAP)
 
-        paintings.append(painting)
+        rectified.append(warped)
 
         # draw_lines(img_lines, approx, lines, vertices)
     # cv2.namedWindow("Lines", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))
-    return paintings
+    return rectified
 
 
 def draw_lines(img_lines, contour, lines, vertices=None, error=False):
