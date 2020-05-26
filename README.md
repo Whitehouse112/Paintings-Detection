@@ -36,4 +36,6 @@ Starting from contours found in previous point and considering one contour at a 
 
 ### Painting retrieval
 Match each detected painting to the paintings DB:
-1. ORB
+1. Find KeyPoints and Descriptors with ORB
+2. Find best matches between detected paintings and db paintings with BFMatcher (using Hamming Normalization)
+3. Find room in which paintings are collocated

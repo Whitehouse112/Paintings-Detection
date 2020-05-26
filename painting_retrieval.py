@@ -23,10 +23,50 @@ def init_database():
     db = tmp
 
 
-def findName(image_name):
-    file = open('files/data.csv', 'r')
+def findRoom(painting_name):
+    try:
+        file = open('files/data.csv', 'r')
+    except:
+        print("File data.csv not found.")
+        exit(1)
+    
     reader = csv.reader(file)
+    for row in reader:
+        if painting_name in row:
+            file.close()
+            return row[2]
 
+    file.close()
+    return 0
+
+
+def findBestRoom(retrieved):
+    rooms = []
+    tmp = {}
+
+    for d in retrieved:
+        for v in d.values():
+            #The first element is the best one: we can stop the for loop after the first iteration
+            rooms.append(v[2])
+            break
+    for i in rooms:
+        if not i in tmp:
+            tmp[i] = 1
+        else:
+            tmp[i] += 1
+    
+    room = max(tmp.items(), key=lambda x: x[1])
+    return room[0]
+
+
+def findName(image_name):
+    try:
+        file = open('files/data.csv', 'r')
+    except:
+        print("File data.csv not found.")
+        exit(1)
+
+    reader = csv.reader(file)
     for row in reader:
         if image_name in row:
             file.close()
@@ -34,6 +74,18 @@ def findName(image_name):
 
     file.close()
     return "No name"
+
+
+def firstElements(dictionary, number_of_elements):
+    tmp = []
+    firstN = {}
+
+    for k in dictionary.keys():
+        tmp.append(k)
+    for i in range(number_of_elements):
+        firstN[tmp[i]] = dictionary[tmp[i]]
+    return firstN
+
 
 def createMask(painting):
     mask = np.zeros_like(painting, dtype=np.uint8)
@@ -61,11 +113,10 @@ def findBestMatch(painting_descriptor):
                 good_points.append(m) 
         if len(good_points) != 0:
             percentage = len(good_points) / len(matches) * 100
-            #if percentage > 2:
-            ranking[findName(img[2])] = (img[0], percentage)      
+            ranking[findName(img[2])] = (img[0], percentage, findRoom(img[2]))
 
     order_ranking = {k:v for k,v in sorted(ranking.items(), key=lambda item:item[1][1], reverse=True)}
-    return order_ranking
+    return firstElements(order_ranking, 5)
 
 
 def retrieve_paintings(paintings):
@@ -85,5 +136,6 @@ def retrieve_paintings(paintings):
         retrieved.append(ranking)
 
     #retrieved is a dictionaries list, each dictionary is structured as below:
-    #{painting_name: (painting_image, accuracy_percentage)}
-    return retrieved
+    #{painting_name: (painting_image, accuracy_percentage, room)}
+    room = findBestRoom(retrieved)
+    return room, retrieved

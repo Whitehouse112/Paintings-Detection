@@ -22,10 +22,11 @@ while video.grab():
 
     roi_list, cont_list = detect_paintings(np.array(frame))
     paintings = rectify_paintings(cont_list, np.array(frame))
-    retrieved = retrieve_paintings(paintings)
+    room, retrieved = retrieve_paintings(paintings)
     
     # Show results
     print("ROI list:", roi_list)
+    print("Room:", room)
     draw(roi_list, cont_list, paintings, retrieved, np.array(frame))
     print("\n-----------------------------------")
 
