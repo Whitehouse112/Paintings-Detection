@@ -58,7 +58,7 @@ def createMask(img):
     return mask
 
 
-def findBestMatches(painting_descriptors, n_max=5):
+def findBestMatches(painting_descriptors, n_max=3):
     matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
 
     ranking = []
@@ -75,7 +75,7 @@ def findBestMatches(painting_descriptors, n_max=5):
             ranking.append((img_name, accuracy))
 
     ranking.sort(reverse=True, key=lambda match: match[1])
-    while len(ranking) < 5:
+    while len(ranking) < n_max:
         x = np.random.randint(0, len(des_db))
         img_name = des_db[x][0]
         ranking.append((img_name, 0))
