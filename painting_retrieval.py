@@ -37,14 +37,15 @@ def read_file():
 
 
 def findRoom(retrieved):
-    # names = retrieved[:, 0, 0]
-    names = [r[0][0] for r in retrieved if round(np.float32(r[0][1])) > 5]
-    rooms_hist = np.zeros((30,), dtype=np.uint8)
+    accuracy_threshold = 5
+    names = [r[0, 0] for r in retrieved if round(np.float32(r[0, 1])) > accuracy_threshold]
+    rooms_hist = np.zeros((30,), dtype=np.float32)
 
-    for name in names:
+    for idx, name in enumerate(names):
         _, _, room = data_csv[name]
+        accuracy = np.float32(retrieved[idx, 0, 1])
         room = np.uint8(room)
-        rooms_hist[room] += 1
+        rooms_hist[room] += accuracy
 
     return np.argmax(rooms_hist)
 

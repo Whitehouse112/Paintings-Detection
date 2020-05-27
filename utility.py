@@ -78,6 +78,13 @@ def print_ranking(retrieved):
             print(f"{j + 1} - {title}, {author}: {accuracy}%")
 
 
+def print_room(room):
+    if room == 0:
+        print("\nNo room found.")
+    else:
+        print("\nRoom:", room)
+
+
 def draw(roi_list, cont_list, rectified, retrieved, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
