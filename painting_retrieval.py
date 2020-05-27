@@ -37,7 +37,8 @@ def read_file():
 
 
 def findRoom(retrieved):
-    names = retrieved[:, 0, 0]
+    # names = retrieved[:, 0, 0]
+    names = [r[0][0] for r in retrieved if round(np.float32(r[0][1])) > 5]
     rooms_hist = np.zeros((30,), dtype=np.uint8)
 
     for name in names:
@@ -104,6 +105,8 @@ def retrieve_paintings(paintings):
         retrieved.append(ranking)
     retrieved = np.array(retrieved)
 
-    room = findRoom(retrieved)
+    room = 0
+    if len(paintings) > 0:
+        room = findRoom(retrieved)
 
     return room, retrieved
