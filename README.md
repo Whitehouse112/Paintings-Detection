@@ -34,7 +34,7 @@ Starting from contours found in previous point and considering one contour at a 
 6. Compute aspect-ratio
 7. Warp perspective
 
-### Painting retrieval
+### Painting retrieval and localization
 Match each detected painting to the paintings DB:
 1. Find descriptors with ORB
 2. Find best matches (BFMatcher with Hamming Normalization)
@@ -42,5 +42,11 @@ Match each detected painting to the paintings DB:
 
 ### People detection
 Predict a ROI around each person:
-1. YOLO v3
+1. YOLO v3 (from OpenCV)
+   For each detection:
+   - Predict a score for each class
+   - Take only the class corresponding to the best score
+   - Take only matches belonging to the person class
+   - Thresholding
+   - Non-maximum suppression
 2. Discard people in paintings
