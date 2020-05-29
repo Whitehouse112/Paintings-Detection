@@ -2,7 +2,18 @@ import cv2
 import numpy as np
 
 
-def detect_people(frame):
+def discard_paintings(boxes, roi_list):
+    for box in boxes:
+        (bx, by, bw, bh) = box
+        for roi in roi_list:
+            (px, py, pw, ph) = roi
+            if bx >= px and by >= py and bx + bw <= px + pw and by + bh <= py + ph:
+                boxes.remove(box)
+                return discard_paintings(boxes, roi_list)
+    return boxes
+
+
+def detect_people(frame, roi_list):
     path = 'files/'
 
     # Give the configuration and weight files for the model and load the network
@@ -41,5 +52,7 @@ def detect_people(frame):
     indices = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold, nms_threshold=confidence_threshold - 0.1)
     indices = np.array(indices)
     boxes = [boxes[i] for i in indices.flatten()]
+
+    boxes = discard_paintings(boxes, roi_list)
 
     return boxes

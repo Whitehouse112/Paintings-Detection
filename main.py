@@ -1,4 +1,3 @@
-import numpy as np
 import cv2
 import painting_detection as detect
 import painting_rectification as rect
@@ -7,7 +6,7 @@ import people_detection as people
 import utility as util
 
 
-video_name = 'VIRB0399.MP4'
+video_name = '20180206_113059.MP4'
 video = util.load_video(video_name)
 
 print('\n')
@@ -29,7 +28,7 @@ while video.grab():
     roi_list, cont_list = detect.detect_paintings(frame)
     rectified = rect.rectify_paintings(cont_list, frame)
     room, retrieved = retr.retrieve_paintings(rectified)
-    people_boxes = people.detect_people(frame)
+    people_boxes = people.detect_people(frame, roi_list)
     
     # Show results
     print("\nROI list:", roi_list)
