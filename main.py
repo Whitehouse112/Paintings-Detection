@@ -16,7 +16,7 @@ detect.init_histogram()
 rect.init_rectification()
 print("Initializing ORB database...")
 retr.init_database()
-print("Reading Data from csv file...")
+print("Reading data from csv file...")
 retr.read_file()
 print("Done")
 
@@ -26,20 +26,16 @@ while video.grab():
     print("\n-----------------------------------")
     print("\nFrame", int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1)
 
-    roi_list, cont_list = detect.detect_paintings(np.array(frame))
-    rectified = rect.rectify_paintings(cont_list, np.array(frame))
+    roi_list, cont_list = detect.detect_paintings(frame)
+    rectified = rect.rectify_paintings(cont_list, frame)
     room, retrieved = retr.retrieve_paintings(rectified)
-    frame_people = people.detect_people(np.array(frame))
+    people_boxes = people.detect_people(np.array(frame))
     
     # Show results
     print("\nROI list:", roi_list)
     util.print_ranking(retrieved)
     util.print_room(room)
-    util.draw(roi_list, cont_list, rectified, retrieved, np.array(frame))
-    util.draw(roi_list, cont_list, [], [], np.array(frame))
-
-    cv2.namedWindow("Frame people", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-    cv2.imshow("Frame people", frame_people)
+    util.draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
 
     # Delay & escape-key
     # video = skip_frames(video, fps=1)

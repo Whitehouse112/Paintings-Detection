@@ -16,14 +16,15 @@ def init_database():
     for img_name in img_names:
         img = cv2.imread(f"paintings_db/{img_name}")
         paintings_db[img_name] = img
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, des = orb.detectAndCompute(gray, None)
         des_db.append((img_name, des))
 
 
 def read_file():
     try:
-        file = open('files/data.csv', 'r')
+        path = 'files/'
+        file = open(path + 'data.csv', 'r')
         reader = csv.reader(file)
         next(reader)  # skip first line
         for row in reader:
@@ -91,7 +92,7 @@ def retrieve_paintings(paintings):
     retrieved = []
 
     for painting in paintings:
-        gray = cv2.cvtColor(painting, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(painting, cv2.COLOR_BGR2GRAY)
 
         # Check painiting dimensions in order to avoid orb error: "(-215) Assertion failed, inv_scale_x > 0"
         if not(gray.shape[0] > 2 and gray.shape[1] > 2):

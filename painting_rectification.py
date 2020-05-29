@@ -181,18 +181,16 @@ def rectify_paintings(cont_list, frame):
         approx = cv2.approxPolyDP(contour, epsilon, True)
         img_poly = np.zeros_like(frame)
         cv2.drawContours(img_poly, [approx], -1, (0, 255, 0), thickness=5)
-        img_poly = cv2.cvtColor(img_poly, cv2.COLOR_RGB2GRAY)
+        img_poly = cv2.cvtColor(img_poly, cv2.COLOR_BGR2GRAY)
 
         # Finding lines with Hough transform
         lines = cv2.HoughLines(img_poly, 1.3, np.pi / 180, 150)
         if lines is None:
-            # print("Painting not found.")
             continue
 
         # Lines intersections
         intersections = find_intersections(lines)
         if len(intersections) < 4:
-            # print("Painting not found.")
             draw_lines(img_lines, approx, lines, error=True)
             continue
 
@@ -202,13 +200,12 @@ def rectify_paintings(cont_list, frame):
         # Ordering vertices
         tl, tr, bl, br = order_centers(vertices)
         frame_h, frame_w = frame.shape[0:2]
-        tl, tr, bl, br = check_vertices(tl, tr, bl, br, frame_h, frame_w)
+        tl, tr, bl, br = check_vertices(tl, tr, bl, br, frame_h, frame_w)  # da cambiare
         hmax = max(bl[1] - tl[1], br[1] - tr[1])
         hmin = min(bl[1] - tl[1], br[1] - tr[1])
         wmax = max(tr[0] - tl[0], br[0] - bl[0])
         wmin = min(tr[0] - tl[0], br[0] - bl[0])
         if not(20 <= hmax <= frame_h and 20 <= hmin <= frame_h and 20 <= wmax <= frame_w and 20 <= wmin <= frame_w):
-            # print("Painting not found.")
             draw_lines(img_lines, approx, lines, vertices, error=True)
             continue
 

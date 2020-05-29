@@ -26,10 +26,11 @@ def compute_histogram(img, stripes=10):
 def init_histogram():
     import os
     global base_hist, num_ex, sum_hist
+    path = 'hist_photos/'
 
-    n = len([name for name in os.listdir('photos/')])
+    n = len([name for name in os.listdir(path)])
     for i in range(1, n + 1):
-        img = cv2.imread("photos/" + str(i) + ".png")
+        img = cv2.imread(path + str(i) + ".png")
 
         hist = compute_histogram(img)
 
@@ -75,6 +76,7 @@ def bbox_ioa(box1, box2):
     Inspired by Yolo v3 bbox_iou
     Returns the maximum Intersection over Area of two bounding boxes
     """
+
     # Get the coordinates of bounding boxes
     b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[0] + box1[2], box1[1] + box1[3]
     b2_x1, b2_y1, b2_x2, b2_y2 = box2[0], box2[1], box2[0] + box2[2], box2[1] + box2[3]
@@ -126,7 +128,7 @@ def contours_refining(frame, contours):
 
         # Merge overlapping
         box, cont, roi_list, cont_list = merge_overlapping(box, cont, roi_list, cont_list)
-        x, y, w, h = box
+        (x, y, w, h) = box
 
         # Convex hull
         cont = cv2.convexHull(cont)
@@ -142,7 +144,6 @@ def contours_refining(frame, contours):
         similarity = histogram_distance(roi)
         if similarity < 0.3:
             continue
-        # cv2.imwrite('photos/image' + str(n) + '.png', roi)
 
         roi_list.append(box)
         cont_list.append(cont)
@@ -158,7 +159,7 @@ def update_histogram(roi_list, frame):
     global base_hist, num_ex, sum_hist
 
     for roi in roi_list:
-        x, y, w, h = roi
+        (x, y, w, h) = roi
         example = frame[y:y + h, x:x + w]
         ex_hist = compute_histogram(example)
         sum_hist += ex_hist
@@ -167,8 +168,9 @@ def update_histogram(roi_list, frame):
 
 
 def detect_paintings(frame):
+
     # Contrast Limited Adaptive Histogram Equalization
-    gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     equal = clahe.apply(gray)
 
@@ -185,7 +187,7 @@ def detect_paintings(frame):
     contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
-    img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
+    img_contours = cv2.cvtColor(img_contours, cv2.COLOR_BGR2GRAY)
 
     # Morphology transformations
     img_morph = img_contours
@@ -197,7 +199,7 @@ def detect_paintings(frame):
     contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
-    # img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
+    # img_contours = cv2.cvtColor(img_contours, cv2.COLOR_BGR2GRAY)
 
     roi_list, cont_list = contours_refining(frame, contours)
 
@@ -208,7 +210,7 @@ def detect_paintings(frame):
 def draw_contours(edges, contours, frame):
     img_contours = np.zeros_like(frame)
     cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
-    img_contours = cv2.cvtColor(img_contours, cv2.COLOR_RGB2GRAY)
+    img_contours = cv2.cvtColor(img_contours, cv2.COLOR_BGR2GRAY)
 
     vertical_concat = np.concatenate((edges, img_contours), axis=0)
     cv2.namedWindow("Contours", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)

@@ -85,11 +85,19 @@ def print_room(room):
         print("\nRoom:", room)
 
 
-def draw(roi_list, cont_list, rectified, retrieved, frame):
+def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
     roi_frame = np.array(frame)
     for rect in roi_list:
-        x, y, w, h = rect
+        (x, y, w, h) = rect
         cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 255, 0), thickness=2)
+    for box in people_boxes:
+        (x, y, w, h) = box
+        cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 96, 255), thickness=3)
+    if room == 0:
+        room = "No room found"
+    else:
+        room = 'Room ' + str(room)
+    cv2.putText(roi_frame, room, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 48, 0), thickness=3)
 
     mask = np.zeros_like(frame)
     for cont in cont_list:
@@ -97,9 +105,9 @@ def draw(roi_list, cont_list, rectified, retrieved, frame):
     segm_frame = np.uint8(mask == 255) * frame
 
     vertical_concat = np.concatenate((roi_frame, segm_frame), axis=0)
-    cv2.namedWindow("Painting Detection & Segmentation",
+    cv2.namedWindow("Detection & Segmentation",
                     flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-    cv2.imshow("Painting Detection & Segmentation", cv2.resize(vertical_concat, (int(1600 / 2), 900)))
+    cv2.imshow("Detection & Segmentation", cv2.resize(vertical_concat, None, fx=0.65, fy=0.65))
 
     if len(rectified) == 0:
         return
@@ -111,9 +119,9 @@ def draw(roi_list, cont_list, rectified, retrieved, frame):
     else:
         concatenate = rect_concat
 
-    cv2.namedWindow("Painting Rectification and Retrieval",
+    cv2.namedWindow("Painting Rectification & Retrieval",
                     flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-    cv2.imshow("Painting Rectification and Retrieval", cv2.resize(concatenate, None, fx=0.6, fy=0.6))
+    cv2.imshow("Painting Rectification & Retrieval", cv2.resize(concatenate, None, fx=0.75, fy=0.75))
 
 
 def skip_frames(video, fps=1):
