@@ -22,8 +22,9 @@ def init_database():
 
 
 def read_file():
+    path = 'files/'
+
     try:
-        path = 'files/'
         file = open(path + 'data.csv', 'r')
         reader = csv.reader(file)
         next(reader)  # skip first line
@@ -40,8 +41,8 @@ def read_file():
 def findRoom(retrieved):
     accuracy_threshold = 5
     names = [r[0, 0] for r in retrieved if round(np.float32(r[0, 1])) > accuracy_threshold]
-    rooms_hist = np.zeros((30,), dtype=np.float32)
 
+    rooms_hist = np.zeros((30,), dtype=np.float32)
     for idx, name in enumerate(names):
         _, _, room = data_csv[name]
         accuracy = np.float32(retrieved[idx, 0, 1])
@@ -52,11 +53,12 @@ def findRoom(retrieved):
 
 
 def createMask(img):
-    mask = np.zeros_like(img, dtype=np.uint8)
-    h = img.shape[0]
+    h, w = img.shape[:2]
+
     h_del = round(h * 0.15)
-    w = img.shape[1]
     w_del = round(w * 0.15)
+
+    mask = np.zeros_like(img, dtype=np.uint8)
     mask[h_del:h - h_del, w_del:w - w_del] = 255
     return mask
 
@@ -68,16 +70,20 @@ def findBestMatches(painting_descriptors, n_max=3):
     for img in des_db:
         img_name, img_des = img
 
-        good_points = []
         matches = matcher.knnMatch(painting_descriptors, img_des, k=2)
+
+        good_points = []
         for m, n in matches:
             if m.distance < 0.75 * n.distance:
                 good_points.append(m)
+
         if len(good_points) > 0:
             accuracy = len(good_points) / len(matches) * 100
             ranking.append((img_name, accuracy))
 
     ranking.sort(reverse=True, key=lambda match: match[1])
+
+    # Bring matches to exacly n_max
     while len(ranking) < n_max:
         x = np.random.randint(0, len(des_db))
         img_name = des_db[x][0]
@@ -90,16 +96,14 @@ def findBestMatches(painting_descriptors, n_max=3):
 
 def retrieve_paintings(paintings):
     retrieved = []
-
     for painting in paintings:
-        gray = cv2.cvtColor(painting, cv2.COLOR_BGR2GRAY)
-
         # Check painiting dimensions in order to avoid orb error: "(-215) Assertion failed, inv_scale_x > 0"
-        if not(gray.shape[0] > 2 and gray.shape[1] > 2):
+        if not(painting.shape[0] > 2 and painting.shape[1] > 2):
             continue
 
         orb = cv2.ORB_create()
 
+        gray = cv2.cvtColor(painting, cv2.COLOR_BGR2GRAY)
         mask = createMask(gray)
         _, des = orb.detectAndCompute(gray, mask)
 

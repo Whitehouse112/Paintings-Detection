@@ -6,11 +6,12 @@ import painting_retrieval as retr
 import people_detection as p_detect
 import utility as util
 import threading
-import time
+# import time
 
 outputs = {}
 
-def paintings(frame):
+
+def paintingsThread(frame):
     roi_list, cont_list = detect.detect_paintings(np.array(frame))
     rectified = rect.rectify_paintings(cont_list, np.array(frame))
     room, retrieved = retr.retrieve_paintings(rectified)
@@ -21,7 +22,7 @@ def paintings(frame):
     outputs["room"] = room
 
 
-def people(frame):
+def peopleThread(frame):
     frame_people = p_detect.detect_people(np.array(frame))
     outputs['frame_people'] = frame_people
 
@@ -45,8 +46,8 @@ def main():
         print("\n-----------------------------------")
         print("\nFrame", int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1)
 
-        t1 = threading.Thread(target=paintings, args=(frame,))
-        t2 = threading.Thread(target=people, args=(frame,))
+        t1 = threading.Thread(target=paintingsThread, args=(frame,))
+        t2 = threading.Thread(target=peopleThread, args=(frame,))
         
         t1.start()
         t2.start()
@@ -78,6 +79,7 @@ def main():
 
     video.release()
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()

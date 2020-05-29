@@ -29,7 +29,7 @@ while video.grab():
     roi_list, cont_list = detect.detect_paintings(frame)
     rectified = rect.rectify_paintings(cont_list, frame)
     room, retrieved = retr.retrieve_paintings(rectified)
-    people_boxes = people.detect_people(np.array(frame))
+    people_boxes = people.detect_people(frame)
     
     # Show results
     print("\nROI list:", roi_list)

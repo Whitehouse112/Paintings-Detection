@@ -39,6 +39,7 @@ def detect_people(frame):
 
     # Non-Maximum Suppression
     indices = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold, nms_threshold=confidence_threshold - 0.1)
+    indices = np.array(indices)
     boxes = [boxes[i] for i in indices.flatten()]
 
     return boxes
