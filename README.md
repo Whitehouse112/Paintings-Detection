@@ -43,6 +43,7 @@ Match each detected painting to the paintings DB:
 ### People detection
 Predict a ROI around each person:
 1. YOLO v3 (from OpenCV)
+   
    For each detection:
    - Predict a score for each class
    - Take only the class corresponding to the best score
