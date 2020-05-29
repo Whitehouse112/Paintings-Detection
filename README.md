@@ -34,7 +34,7 @@ Starting from contours found in previous point and considering one contour at a 
 6. Compute aspect-ratio
 7. Warp perspective
 
-### Painting retrieval and localization
+### Painting retrieval & localization
 Match each detected painting to the paintings DB:
 1. Find descriptors with ORB
 2. Find best matches (BFMatcher with Hamming Normalization)
