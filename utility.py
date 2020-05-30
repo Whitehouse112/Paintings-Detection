@@ -92,12 +92,12 @@ def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
         cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 255, 0), thickness=2)
     for box in people_boxes:
         (x, y, w, h) = box
-        cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (0, 96, 255), thickness=3)
+        cv2.rectangle(roi_frame, (x, y), (x + w, y + h), (255, 50, 0), thickness=2)
     if room == 0:
         room = "No room found"
     else:
         room = 'Room ' + str(room)
-    cv2.putText(roi_frame, room, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 48, 0), thickness=3)
+    cv2.putText(roi_frame, room, (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 50, 255), thickness=2)
 
     mask = np.zeros_like(frame)
     for cont in cont_list:

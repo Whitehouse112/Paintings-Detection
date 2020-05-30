@@ -3,32 +3,30 @@ import cv2
 import painting_detection as detect
 import painting_rectification as rect
 import painting_retrieval as retr
-import people_detection as p_detect
+import people_detection as people
 import utility as util
 import threading
-# import time
+
 
 outputs = {}
 
 
-def paintingsThread(frame):
-    roi_list, cont_list = detect.detect_paintings(np.array(frame))
+def paintingsThread(frame, cont_list):
     rectified = rect.rectify_paintings(cont_list, np.array(frame))
     room, retrieved = retr.retrieve_paintings(rectified)
-    outputs["roi_list"] = roi_list
     outputs["cont_list"] = cont_list 
     outputs["rectified"] = rectified
     outputs["retrieved"] = retrieved
     outputs["room"] = room
 
 
-def peopleThread(frame):
-    frame_people = p_detect.detect_people(np.array(frame))
-    outputs['frame_people'] = frame_people
+def peopleThread(frame, roi_list):
+    people_boxes = people.detect_people(frame, roi_list)
+    outputs['people_boxes'] = people_boxes
 
 
 def main():
-    video_name = 'GOPR5826.MP4'
+    video_name = 'VIRB0392.MP4'
     video = util.load_video(video_name)
 
     print('\n')
@@ -46,8 +44,10 @@ def main():
         print("\n-----------------------------------")
         print("\nFrame", int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1)
 
-        t1 = threading.Thread(target=paintingsThread, args=(frame,))
-        t2 = threading.Thread(target=peopleThread, args=(frame,))
+        roi_list, cont_list = detect.detect_paintings(np.array(frame))
+
+        t1 = threading.Thread(target=paintingsThread, args=(frame, cont_list))
+        t2 = threading.Thread(target=peopleThread, args=(frame, roi_list))
         
         t1.start()
         t2.start()
@@ -55,21 +55,16 @@ def main():
         t1.join()
         t2.join()
 
-        roi_list = outputs["roi_list"]
-        cont_list = outputs["cont_list"]
         rectified = outputs["rectified"]
         retrieved = outputs["retrieved"]
         room = outputs["room"]
-        frame_people = outputs['frame_people']
+        people_boxes = outputs['people_boxes']
 
         # Show results
         print("\nROI list:", roi_list)
         util.print_ranking(retrieved)
         util.print_room(room)
-        util.draw(roi_list, cont_list, rectified, retrieved, np.array(frame))
-
-        cv2.namedWindow("Frame people", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-        cv2.imshow("Frame people", frame_people)
+        util.draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
 
         # Delay & escape-key
         # video = skip_frames(video, fps=1)
