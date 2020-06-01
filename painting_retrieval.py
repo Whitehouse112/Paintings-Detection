@@ -55,8 +55,8 @@ def findRoom(retrieved):
 def createMask(img):
     h, w = img.shape[:2]
 
-    h_del = round(h * 0.15)
-    w_del = round(w * 0.15)
+    h_del = round(h * 0.20)
+    w_del = round(w * 0.20)
 
     mask = np.zeros_like(img, dtype=np.uint8)
     mask[h_del:h - h_del, w_del:w - w_del] = 255
@@ -74,7 +74,7 @@ def findBestMatches(painting_descriptors, n_max=3):
 
         good_points = []
         for m, n in matches:
-            if m.distance < 0.75 * n.distance:
+            if m.distance < 0.80 * n.distance:
                 good_points.append(m)
 
         if len(good_points) > 0:
