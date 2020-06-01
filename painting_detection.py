@@ -176,16 +176,15 @@ def detect_paintings(frame):
     equal = clahe.apply(gray)
 
     # Edge detection
-    edges = edge_detection(equal)
+    mag = edge_detection(equal)
 
-    # Filtering
-    bil = cv2.bilateralFilter(edges, 5, 200, 200)
+    bil = cv2.bilateralFilter(mag, 5, 200, 200)
 
     # Thresholding
-    thr = np.uint8(bil > 60) * 255
+    edges = np.uint8(bil > 65) * 255
 
     # Significant contours 1
-    contours, _ = cv2.findContours(thr, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     img_contours = np.zeros_like(frame)
     cv2.drawContours(img_contours, contours, -1, (0, 255, 0), thickness=2)
     img_contours = cv2.cvtColor(img_contours, cv2.COLOR_BGR2GRAY)
@@ -194,7 +193,7 @@ def detect_paintings(frame):
     img_morph = img_contours
     img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)
     img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_DILATE, (3, 3), iterations=3)
-    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=3)
+    img_morph = cv2.morphologyEx(img_morph, cv2.MORPH_ERODE, (3, 3), iterations=2)
 
     # Significant contours 2
     contours, _ = cv2.findContours(img_morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

@@ -1,4 +1,3 @@
-import numpy as np
 import cv2
 import painting_detection as detect
 import painting_rectification as rect
@@ -11,9 +10,10 @@ import threading
 outputs = {}
 
 
-def paintingsThread(frame, cont_list):
-    rectified = rect.rectify_paintings(cont_list, np.array(frame))
+def paintingsThread(frame, roi_list, cont_list):
+    rectified, roi_list, cont_list = rect.rectify_paintings(roi_list, cont_list, frame)
     room, retrieved = retr.retrieve_paintings(rectified)
+    outputs["roi_list"] = roi_list
     outputs["cont_list"] = cont_list 
     outputs["rectified"] = rectified
     outputs["retrieved"] = retrieved
@@ -26,7 +26,7 @@ def peopleThread(frame, roi_list):
 
 
 def main():
-    video_name = 'GOPR5826.MP4'
+    video_name = 'VIRB0392.MP4'
     video = util.load_video(video_name)
 
     print('\n')
@@ -35,7 +35,7 @@ def main():
     rect.init_rectification()
     print("Initializing ORB database...")
     retr.init_database()
-    print("Reading Data from csv file...")
+    print("Reading data from CSV file...")
     retr.read_file()
     print("Done")
 
@@ -44,17 +44,19 @@ def main():
         print("\n-----------------------------------")
         print("\nFrame", int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1)
 
-        roi_list, cont_list = detect.detect_paintings(np.array(frame))
+        roi_list, cont_list = detect.detect_paintings(frame)
 
-        t1 = threading.Thread(target=paintingsThread, args=(frame, cont_list))
+        t1 = threading.Thread(target=paintingsThread, args=(frame, roi_list, cont_list))
         t2 = threading.Thread(target=peopleThread, args=(frame, roi_list))
-        
+
         t1.start()
         t2.start()
 
         t1.join()
         t2.join()
 
+        roi_list = outputs["roi_list"]
+        cont_list = outputs["cont_list"]
         rectified = outputs["rectified"]
         retrieved = outputs["retrieved"]
         room = outputs["room"]
@@ -65,6 +67,7 @@ def main():
         util.print_ranking(retrieved)
         util.print_room(room)
         util.draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
+        # util.draw(roi_list, cont_list, rectified, [], [], 0, frame)
 
         # Delay & escape-key
         # video = skip_frames(video, fps=1)

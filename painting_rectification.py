@@ -147,34 +147,11 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     return h, w
 
 
-def check_vertices(tl, tr, bl, br, frame_h, frame_w):
-    # tl[0] = np.clip(tl[0], -frame_w / 2, frame_w)
-    # tl[1] = np.clip(tl[1], -frame_h / 2, frame_h)
-    tl[0] = np.clip(tl[0], 0, frame_w)
-    tl[1] = np.clip(tl[1], 0, frame_h)
-
-    # tr[0] = np.clip(tr[0], 0, frame_w + frame_w / 2)
-    # tr[1] = np.clip(tr[1], -frame_h / 2, frame_h)
-    tr[0] = np.clip(tr[0], 0, frame_w)
-    tr[1] = np.clip(tr[1], 0, frame_h)
-
-    # bl[0] = np.clip(bl[0], -frame_w / 2, frame_w)
-    # bl[1] = np.clip(bl[1], 0, frame_h + frame_h / 2)
-    bl[0] = np.clip(bl[0], 0, frame_w)
-    bl[1] = np.clip(bl[1], 0, frame_h)
-
-    # br[0] = np.clip(br[0], 0, frame_w + frame_w / 2)
-    # br[1] = np.clip(br[1], 0, frame_h + frame_h / 2)
-    br[0] = np.clip(br[0], 0, frame_w)
-    br[1] = np.clip(br[1], 0, frame_h)
-
-    return tl, tr, bl, br
-
-
-def rectify_paintings(cont_list, frame):
+def rectify_paintings(roi_list, cont_list, frame):
+    new_roi_list, new_cont_list = [], []
     rectified = []
     img_lines = np.zeros_like(frame)
-    for contour in cont_list:
+    for idx, contour in enumerate(cont_list):
 
         # Polygonal approximation
         epsilon = 0.02 * cv2.arcLength(contour, True)
@@ -200,12 +177,11 @@ def rectify_paintings(cont_list, frame):
         # Ordering vertices
         tl, tr, bl, br = order_centers(vertices)
         frame_h, frame_w = frame.shape[0:2]
-        tl, tr, bl, br = check_vertices(tl, tr, bl, br, frame_h, frame_w)  # da cambiare
         hmax = max(bl[1] - tl[1], br[1] - tr[1])
         hmin = min(bl[1] - tl[1], br[1] - tr[1])
         wmax = max(tr[0] - tl[0], br[0] - bl[0])
         wmin = min(tr[0] - tl[0], br[0] - bl[0])
-        if not(20 <= hmax <= frame_h and 20 <= hmin <= frame_h and 20 <= wmax <= frame_w and 20 <= wmin <= frame_w):
+        if not(30 <= hmax <= frame_h and 30 <= hmin <= frame_h and 30 <= wmax <= frame_w and 30 <= wmin <= frame_w):
             draw_lines(img_lines, approx, lines, vertices, error=True)
             continue
 
@@ -219,11 +195,13 @@ def rectify_paintings(cont_list, frame):
         warped = cv2.warpPerspective(frame, m, (w, h), flags=cv2.WARP_INVERSE_MAP)
 
         rectified.append(warped)
+        new_roi_list.append(roi_list[idx])
+        new_cont_list.append(cont_list[idx])
 
         # draw_lines(img_lines, approx, lines, vertices)
     # cv2.namedWindow("Lines", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))
-    return rectified
+    return rectified, new_roi_list, new_cont_list
 
 
 def draw_lines(img_lines, contour, lines, vertices=None, error=False):

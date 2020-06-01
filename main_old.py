@@ -15,7 +15,7 @@ detect.init_histogram()
 rect.init_rectification()
 print("Initializing ORB database...")
 retr.init_database()
-print("Reading data from csv file...")
+print("Reading data from CSV file...")
 retr.read_file()
 print("Done")
 
