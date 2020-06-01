@@ -150,7 +150,7 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
 def rectify_paintings(roi_list, cont_list, frame):
     new_roi_list, new_cont_list = [], []
     rectified = []
-    img_lines = np.zeros_like(frame)
+    # img_lines = np.zeros_like(frame)
     for idx, contour in enumerate(cont_list):
 
         # Polygonal approximation
@@ -168,7 +168,7 @@ def rectify_paintings(roi_list, cont_list, frame):
         # Lines intersections
         intersections = find_intersections(lines)
         if len(intersections) < 4:
-            draw_lines(img_lines, approx, lines, error=True)
+            # draw_lines(img_lines, approx, lines, error=True)
             continue
 
         # Average vertices with K-Means
@@ -182,7 +182,7 @@ def rectify_paintings(roi_list, cont_list, frame):
         wmax = max(tr[0] - tl[0], br[0] - bl[0])
         wmin = min(tr[0] - tl[0], br[0] - bl[0])
         if not(30 <= hmax <= frame_h and 30 <= hmin <= frame_h and 30 <= wmax <= frame_w and 30 <= wmin <= frame_w):
-            draw_lines(img_lines, approx, lines, vertices, error=True)
+            # draw_lines(img_lines, approx, lines, vertices, error=True)
             continue
 
         # Compute aspect-ratio
