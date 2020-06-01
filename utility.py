@@ -105,9 +105,14 @@ def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
     segm_frame = np.uint8(mask == 255) * frame
 
     vertical_concat = np.concatenate((roi_frame, segm_frame), axis=0)
+
+    if vertical_concat.shape[0] > 2000:
+        fx, fy = 0.45, 0.45
+    else:
+        fx, fy = 0.65, 0.65 
     cv2.namedWindow("Detection & Segmentation",
                     flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
-    cv2.imshow("Detection & Segmentation", cv2.resize(vertical_concat, None, fx=0.65, fy=0.65))
+    cv2.imshow("Detection & Segmentation", cv2.resize(vertical_concat, None, fx=fx, fy=fy))
 
     if len(rectified) == 0:
         return
