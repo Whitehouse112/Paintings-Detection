@@ -15,9 +15,11 @@ def discard_paintings(boxes, roi_list):
 
 def detect_people(frame, roi_list):
     path = 'files/'
+    config = 'yolov3.cfg'
+    weights = 'yolov3.weights'
 
     # Give the configuration and weight files for the model and load the network
-    net = cv2.dnn.readNetFromDarknet(path + 'yolov3.cfg', path + 'yolov3.weights')
+    net = cv2.dnn.readNetFromDarknet(path + config, path + weights)
     net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 
     # determine the output layer
@@ -36,10 +38,9 @@ def detect_people(frame, roi_list):
     for output in outputs:
         for detection in output:
             scores = detection[5:]
-            classID = np.argmax(scores)
+            classID = 0  # refers to person class
             confidence = scores[classID]
-            # classID = 0 refers to person class
-            if classID == 0 and confidence > confidence_threshold:
+            if confidence > confidence_threshold:
                 box = detection[:4] * np.array([frame_w, frame_h, frame_w, frame_h])
                 (centerX, centerY, width, height) = box.astype("int")
                 x = int(centerX - (width / 2))

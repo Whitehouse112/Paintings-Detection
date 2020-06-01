@@ -26,7 +26,7 @@ def peopleThread(frame, roi_list):
 
 
 def main():
-    video_name = 'VIRB0392.MP4'
+    video_name = 'VIRB0399.MP4'
     video = util.load_video(video_name)
 
     print('\n')
@@ -39,6 +39,7 @@ def main():
     retr.read_file()
     print("Done")
 
+    # video.set(cv2.CAP_PROP_POS_FRAMES, 1470)
     while video.grab():
         _, frame = video.retrieve()  # (H, W, 3)
         print("\n-----------------------------------")
@@ -67,7 +68,7 @@ def main():
         util.print_ranking(retrieved)
         util.print_room(room)
         util.draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
-        # util.draw(roi_list, cont_list, rectified, [], [], 0, frame)
+        # util.draw(roi_list, cont_list, [], [], [], 0, frame)
 
         # Delay & escape-key
         # video = skip_frames(video, fps=1)

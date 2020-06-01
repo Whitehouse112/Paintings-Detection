@@ -46,8 +46,7 @@ Predict a ROI around each person:
    
    For each detection:
    - Predict a score for each class
-   - Take only the class corresponding to the best score
-   - Take only matches belonging to the person class
+   - Take only the score belonging to the person class
    - Thresholding
    - Non-maximum suppression
 2. Discard people in paintings
