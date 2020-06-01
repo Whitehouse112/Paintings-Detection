@@ -144,7 +144,6 @@ def contours_refining(frame, contours):
         similarity = histogram_distance(roi)
         if similarity < 0.3:
             continue
-        # cv2.imwrite('hist_photos/image.png', roi)
 
         roi_list.append(box)
         cont_list.append(cont)

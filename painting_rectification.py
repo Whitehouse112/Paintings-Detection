@@ -2,24 +2,9 @@ import numpy as np
 import cv2
 
 
-errors = 0
 f_tot = 1000
 num_f = 1
 focal_length = 1000
-
-
-def init_rectification():
-    import os
-    directory = 'errors/'
-    if os.path.isdir(directory):
-        for filename in os.listdir(directory):
-            file_path = os.path.join(directory, filename)
-            try:
-                os.unlink(file_path)
-            except Exception as e:
-                print('Failed to delete %s. Reason: %s' % (file_path, e))
-    else:
-        os.makedirs(directory)
 
 
 def find_intersections(lines):
@@ -148,7 +133,8 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
 
 
 def rectify_paintings(roi_list, cont_list, frame):
-    new_roi_list, new_cont_list = [], []
+    new_roi_list = []
+    new_cont_list = []
     rectified = []
     # img_lines = np.zeros_like(frame)
     for idx, contour in enumerate(cont_list):
@@ -168,7 +154,6 @@ def rectify_paintings(roi_list, cont_list, frame):
         # Lines intersections
         intersections = find_intersections(lines)
         if len(intersections) < 4:
-            # draw_lines(img_lines, approx, lines, error=True)
             continue
 
         # Average vertices with K-Means
@@ -177,12 +162,9 @@ def rectify_paintings(roi_list, cont_list, frame):
         # Ordering vertices
         tl, tr, bl, br = order_centers(vertices)
         frame_h, frame_w = frame.shape[0:2]
-        hmax = max(bl[1] - tl[1], br[1] - tr[1])
-        hmin = min(bl[1] - tl[1], br[1] - tr[1])
-        wmax = max(tr[0] - tl[0], br[0] - bl[0])
-        wmin = min(tr[0] - tl[0], br[0] - bl[0])
+        hmax, hmin = max(bl[1] - tl[1], br[1] - tr[1]), min(bl[1] - tl[1], br[1] - tr[1])
+        wmax, wmin = max(tr[0] - tl[0], br[0] - bl[0]), min(tr[0] - tl[0], br[0] - bl[0])
         if not(30 <= hmax <= frame_h and 30 <= hmin <= frame_h and 30 <= wmax <= frame_w and 30 <= wmin <= frame_w):
-            # draw_lines(img_lines, approx, lines, vertices, error=True)
             continue
 
         # Compute aspect-ratio
@@ -204,7 +186,7 @@ def rectify_paintings(roi_list, cont_list, frame):
     return rectified, new_roi_list, new_cont_list
 
 
-def draw_lines(img_lines, contour, lines, vertices=None, error=False):
+def draw_lines(img_lines, contour, lines, vertices=None):
     img_lines = np.zeros_like(img_lines)
     cv2.drawContours(img_lines, [contour], -1, (255, 0, 0), thickness=2)
     for line in lines:
@@ -220,9 +202,5 @@ def draw_lines(img_lines, contour, lines, vertices=None, error=False):
         cv2.line(img_lines, (x1, y1), (x2, y2), (0, 255, 0), thickness=1)
     if vertices is not None:
         cv2.drawContours(img_lines, np.array(vertices, dtype=np.int), -1, (0, 0, 255), thickness=5)
-    if error is True:
-        global errors
-        cv2.imwrite('errors/error' + str(errors) + '.png', img_lines)
-        errors += 1
     # cv2.namedWindow("Lines", flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     # cv2.imshow("Lines", cv2.resize(img_lines, (1280, 720)))
