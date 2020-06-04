@@ -8,7 +8,8 @@ import threading
 import queue
 
 
-processing = False
+processing = None
+finished = None
 outputs = {}
 DetectQueue = queue.Queue()
 RectifyQueue = queue.Queue()
@@ -23,18 +24,20 @@ class Frame:
     cont_list = None
     recified = None
     retrieved = None
+    room = None
+    people_boxes = None
 
     def __init__(self, frame):
         self.frame = frame
 
 
 def detectThreadBody(video):
-    global DetectQueue, processing, outputs
+    global DetectQueue, processing, outputs, finished
 
     while video.grab() and processing:
         _, frame = video.retrieve()  # (H, W, 3)
 
-        while DetectQueue.qsize() > 50 and processing:
+        while processing and DetectQueue.qsize() > 20:
             pass
 
         block = Frame(frame)
@@ -44,51 +47,69 @@ def detectThreadBody(video):
 
         outputs[block.n_frame] = block
         DetectQueue.put(block.n_frame)
-    processing = False
+    finished = True
 
 
 def rectifyThreadBody():
     global DetectQueue, RectifyQueue, outputs, processing
 
     while processing:
-        n_frame = DetectQueue.get()
-        block = outputs[n_frame]
+        while processing and RectifyQueue.qsize() > 20:
+            pass
 
-        block.rectified, block.roi_list, block.cont_list = rect.rectify_paintings(block.roi_list, block.cont_list,
-                                                                                  block.frame)
+        try:
+            n_frame = DetectQueue.get(timeout=1)
+            block = outputs[n_frame]
 
-        outputs[block.n_frame] = block
-        RectifyQueue.put(block.n_frame)
+            block.rectified, block.roi_list, block.cont_list = rect.rectify_paintings(block.roi_list, block.cont_list,
+                                                                                      block.frame)
+
+            outputs[block.n_frame] = block
+            RectifyQueue.put(block.n_frame)
+        except queue.Empty:
+            continue
 
 
 def retrieveThreadBody():
     global RectifyQueue, RetrieveQueue, outputs, processing
 
     while processing:
-        n_frame = RectifyQueue.get()
-        block = outputs[n_frame]
+        while processing and RetrieveQueue.qsize() > 20:
+            pass
 
-        block.room, block.retrieved = retr.retrieve_paintings(block.rectified)
+        try:
+            n_frame = RectifyQueue.get(timeout=1)
+            block = outputs[n_frame]
 
-        outputs[block.n_frame] = block
-        RetrieveQueue.put(block.n_frame)
+            block.room, block.retrieved = retr.retrieve_paintings(block.rectified)
+
+            outputs[block.n_frame] = block
+            RetrieveQueue.put(block.n_frame)
+        except queue.Empty:
+            continue
 
 
 def peopleThreadBody():
     global RetrieveQueue, PeopleQueue, outputs, processing
 
     while processing:
-        n_frame = RetrieveQueue.get()
-        block = outputs[n_frame]
+        while processing and PeopleQueue.qsize() > 20:
+            pass
 
-        block.people_boxes = people.detect_people(block.frame, block.roi_list)
+        try:
+            n_frame = RetrieveQueue.get(timeout=1)
+            block = outputs[n_frame]
 
-        outputs[block.n_frame] = block
-        PeopleQueue.put(block.n_frame)
+            block.people_boxes = people.detect_people(block.frame, block.roi_list)
+
+            outputs[block.n_frame] = block
+            PeopleQueue.put(block.n_frame)
+        except queue.Empty:
+            continue
 
 
 def main():
-    video_name = "VIRB0399.MP4"
+    video_name = "VIRB0392.MP4"
     video = util.load_video(video_name)
 
     print('\n')
@@ -100,8 +121,9 @@ def main():
     retr.read_file()
     print("Done")
 
-    global processing
+    global processing, finished
     processing = True
+    finished = False
 
     detectThread = threading.Thread(target=detectThreadBody, args=(video, ))
     detectThread.start()
@@ -116,7 +138,7 @@ def main():
     peopleThread.start()
 
     global PeopleQueue, outputs
-    while processing:
+    while finished is False or len(outputs) > 0:
         n_frame = PeopleQueue.get()
         block = outputs[n_frame]
         del outputs[n_frame]
@@ -137,6 +159,7 @@ def main():
             processing = False
             break
         # cv2.waitKey()
+    processing = False
 
     detectThread.join()
     rectifyThread.join()

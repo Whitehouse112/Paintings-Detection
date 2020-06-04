@@ -64,12 +64,14 @@ def createMask(img):
 
 
 def findBestMatches(painting_descriptors, n_max=3):
+    # Brute-force descriptor matcher with Hamming normalization
     matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
 
     ranking = []
     for img in des_db:
         img_name, img_des = img
-
+        
+        # k nearest neighbors matches for each descriptor
         matches = matcher.knnMatch(painting_descriptors, img_des, k=2)
 
         good_points = []
