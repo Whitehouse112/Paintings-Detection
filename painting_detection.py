@@ -2,24 +2,27 @@ import numpy as np
 import cv2
 
 
+stripes = 5
 base_hist = None
 num_ex = 0
 sum_hist = 0
 
 
-def compute_histogram(img, stripes=10):
+def compute_histogram(img):
     """https://www.researchgate.net/publication/310953361_Comparative_study_of_histogram_distance_measures_for_re
     -identification """
 
+    global stripes
+
     h = img.shape[0]
-    w = img.shape[1]
-    mask = np.zeros((h, w), dtype=np.uint8)
+    h_stripe = h // stripes
 
-    every = h // (stripes + 1)
-    for i in range(1, stripes + 1):
-        mask[i * every, :] = 255
+    hist = np.zeros((5, 32, 32, 32), dtype=np.float32)
 
-    hist = cv2.calcHist([img], [0, 1, 2], mask, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+    for i in range(stripes):
+        stripe = img[i * h_stripe:(i + 1) * h_stripe]
+        hist[i] = cv2.calcHist([stripe], [0, 1, 2], None, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+
     return hist
 
 
@@ -63,11 +66,23 @@ def check_dims(_w, _h, frame_h, frame_w):
 
 
 def histogram_distance(roi):
-    global base_hist
+    global base_hist, stripes
 
     hist = compute_histogram(roi)
-    retval = cv2.compareHist(base_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
-    similarity = 1 - retval
+
+    dist = np.zeros((stripes, ), dtype=np.float32)
+    weight = np.zeros((stripes, ), dtype=np.float32)
+    for i in range(stripes):
+        dist[i] = cv2.compareHist(base_hist[i], hist[i], cv2.HISTCMP_BHATTACHARYYA)
+
+        if i < stripes / 2:
+            weight[i] = 1 - (1 / (i + 2))
+        else:
+            weight[i] = 1 - (1 / (stripes - i + 1))
+    
+    weight /= np.sum(weight)
+    similarity = np.sum(weight * (1 - dist))
+
     return similarity
 
 
@@ -121,6 +136,8 @@ def merge_overlapping(box, box_cont, roi_list, cont_list):
 
 
 def contours_refining(frame, contours):
+    global num_ex
+
     roi_list = []
     cont_list = []
     for cont in contours:
@@ -142,13 +159,18 @@ def contours_refining(frame, contours):
         # Histogram distance
         roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        if similarity < 0.3:
-            continue
+        if num_ex < 50:
+            if similarity < 0.2:
+                continue
+        else:
+            if similarity < 0.3:
+                continue
+        # cv2.imwrite('hist_photos/image.png', roi)
+
 
         roi_list.append(box)
         cont_list.append(cont)
 
-    global num_ex
     if num_ex < 50:
         update_histogram(roi_list, frame)
 
@@ -169,7 +191,7 @@ def update_histogram(roi_list, frame):
 
 def detect_paintings(frame):
 
-    # Contrast Limited Adaptive Histogram Equalization
+    # Contrast Limited Adaptive Histogram Equalization for contrast enhancing
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     equal = clahe.apply(gray)
