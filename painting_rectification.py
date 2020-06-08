@@ -99,7 +99,7 @@ def compute_aspect_ratio(tl, tr, bl, br, frame_shape):
     n21, n22, n23 = n2
     n31, n32, n33 = n3
 
-    if n23 != 0 or n33 != 0:
+    if n23 != 0 and n33 != 0:
         f_squared = -((1 / (n23 * n33)) * ((n21 * n31 - (n21 * n33 + n23 * n31) * u0 + n23 * n33 * (u0 ** 2)) + (
                 n22 * n32 - (n22 * n33 + n23 * n32) * v0 + n23 * n33 * (v0 ** 2))))
 

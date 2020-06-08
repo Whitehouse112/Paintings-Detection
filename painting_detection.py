@@ -3,7 +3,7 @@ import cv2
 
 
 stripes = 5
-base_hist = None
+base_hist = []
 num_ex = 0
 sum_hist = 0
 
@@ -14,14 +14,31 @@ def compute_histogram(img):
 
     global stripes
 
-    h = img.shape[0]
+    h, w, _ = img.shape
+
+    ar = w / h
+    dmax = max(h, w)
+    if dmax > 200:
+        if ar < 1:
+            h = int(200)
+            w = int(h * ar)
+        else:
+            w = int(200)
+            h = int(w / ar)
+        img = cv2.resize(img, (w, h))
+
     h_stripe = h // stripes
 
-    hist = np.zeros((5, 32, 32, 32), dtype=np.float32)
+    hist = np.zeros((5, 3, 32), dtype=np.float32)
 
     for i in range(stripes):
         stripe = img[i * h_stripe:(i + 1) * h_stripe]
-        hist[i] = cv2.calcHist([stripe], [0, 1, 2], None, [32, 32, 32], [0, 255, 0, 255, 0, 255])
+        hist[i, 0] = cv2.calcHist([stripe], [0], None, [32], [0, 255])[:, 0]
+        hist[i, 1] = cv2.calcHist([stripe], [1], None, [32], [0, 255])[:, 0]
+        hist[i, 2] = cv2.calcHist([stripe], [2], None, [32], [0, 255])[:, 0]
+        cv2.normalize(hist[i, 0], hist[i, 0], norm_type=cv2.NORM_L2)
+        cv2.normalize(hist[i, 1], hist[i, 1], norm_type=cv2.NORM_L2)
+        cv2.normalize(hist[i, 2], hist[i, 2], norm_type=cv2.NORM_L2)
 
     return hist
 
@@ -159,19 +176,21 @@ def contours_refining(frame, contours):
         # Histogram distance
         roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        if num_ex < 50:
-            if similarity < 0.2:
-                continue
-        else:
-            if similarity < 0.3:
-                continue
-        # cv2.imwrite('hist_photos/image.png', roi)
+        # if num_ex < 50:
+        #     if similarity < 0.4:
+        #         continue
+        # else:
+        #     if similarity < 0.6:
+        #         continue
+        if similarity < 0.4:
+            continue
 
+        # print(similarity)
 
         roi_list.append(box)
         cont_list.append(cont)
 
-    if num_ex < 50:
+    if num_ex < 20:
         update_histogram(roi_list, frame)
 
     return roi_list, cont_list

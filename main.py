@@ -48,7 +48,7 @@ def detectThreadBody(video):
         outputs[block.n_frame] = block
         DetectQueue.put(block.n_frame)
 
-        # video = util.skip_frames(video, fps=2)
+        video = util.skip_frames(video, fps=2)
     finished = True
 
 
@@ -111,7 +111,7 @@ def peopleThreadBody():
 
 
 def main():
-    video_name = "VIRB0399.MP4"
+    video_name = "VIRB0392.MP4"
     video = util.load_video(video_name)
 
     print('\n')
