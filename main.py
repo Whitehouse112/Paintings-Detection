@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------
+# Painting detection project
+# By Lorenzo Cuoghi, Federico Panzani, Lorenzo Rosini
+# (Computer) Vision and Cognitive Systems 2020
+# ------------------------------------------------------------------------
 import cv2
 import painting_detection as detect
 import painting_rectification as rect
@@ -9,6 +14,9 @@ import queue
 import time
 
 
+# ------------------------------------------------------------------------
+# GLOBAL VARIABLES
+# ------------------------------------------------------------------------
 processing = None
 finished = None
 outputs = {}
@@ -18,6 +26,9 @@ RetrieveQueue = queue.Queue()
 PeopleQueue = queue.Queue()
 
 
+# ------------------------------------------------------------------------
+# GLOBAL DATA STRUCTURES
+# ------------------------------------------------------------------------
 class Frame:
     frame = None
     n_frame = None
@@ -37,6 +48,9 @@ class Frame:
         self.frame = frame
 
 
+# ------------------------------------------------------------------------
+# PAINTING DETECTION THREAD
+# ------------------------------------------------------------------------
 def detectThreadBody(video):
     global DetectQueue, processing, outputs, finished
 
@@ -60,6 +74,9 @@ def detectThreadBody(video):
     finished = True
 
 
+# ------------------------------------------------------------------------
+# PAINTING RECTIFICATION THREAD
+# ------------------------------------------------------------------------
 def rectifyThreadBody():
     global DetectQueue, RectifyQueue, outputs, processing
 
@@ -82,6 +99,9 @@ def rectifyThreadBody():
             continue
 
 
+# ------------------------------------------------------------------------
+# PAINTING RETRIEVAL THREAD
+# ------------------------------------------------------------------------
 def retrieveThreadBody():
     global RectifyQueue, RetrieveQueue, outputs, processing
 
@@ -103,6 +123,9 @@ def retrieveThreadBody():
             continue
 
 
+# ------------------------------------------------------------------------
+# PEOPLE DETECTION THREAD
+# ------------------------------------------------------------------------
 def peopleThreadBody():
     global RetrieveQueue, PeopleQueue, outputs, processing
 
@@ -124,20 +147,15 @@ def peopleThreadBody():
             continue
 
 
+# ------------------------------------------------------------------------
+# MAIN process
+# ------------------------------------------------------------------------
 def main():
+    global processing, finished, PeopleQueue, outputs
+
     video_name = "GOPR5826.MP4"
-    video = util.load_video(video_name)
+    video = util.init(video_name)
 
-    print('\n')
-    print("Initializing histogram...")
-    detect.init_histogram()
-    print("Initializing ORB database...")
-    retr.init_database()
-    print("Reading data from CSV file...")
-    retr.read_file()
-    print("Done")
-
-    global processing, finished
     processing = True
     finished = False
 
@@ -153,7 +171,6 @@ def main():
     peopleThread = threading.Thread(target=peopleThreadBody)
     peopleThread.start()
 
-    global PeopleQueue, outputs
     time_frame = time.time()
     while finished is False or len(outputs) > 0:
         n_frame = PeopleQueue.get()
@@ -161,24 +178,20 @@ def main():
         del outputs[n_frame]
 
         time_now = time.time()
-        print("\n-----------------------------------")
-        print("\nFrame", block.n_frame)
+        util.show_results(block)
 
-        # Show results
-        print("\nROI list:", block.roi_list)
-        util.print_ranking(block.retrieved)
-        util.print_room(block.room)
-        util.draw(block.roi_list, block.cont_list, block.rectified, block.retrieved, block.people_boxes, 
-                    block.room,block.frame)
+        # Timing performances
         block.time_draw = time.time() - time_now
         time_elapsed = time.time() - time_frame
-        print("Total computation time = ", block.time_detection + block.time_rectification + block.time_retrieval + block.time_people + block.time_draw)
-        print("Detection time = ", block.time_detection)
+        total_time = block.time_detection + block.time_rectification + block.time_retrieval + \
+            block.time_people + block.time_draw
+        print("\nDetection time = ", block.time_detection)
         print("Rectification time = ", block.time_rectification)
         print("Retrieve time = ", block.time_retrieval)
         print("People time = ", block.time_people)
         print("Draw time = ", block.time_draw)
-        print("\nThreaded time = ", time_elapsed)
+        print("\nTotal computation time = ", total_time)
+        print("Threaded time = ", time_elapsed)
         time_frame = time.time()
 
         # Delay & escape-key
@@ -196,5 +209,10 @@ def main():
     cv2.destroyAllWindows()
 
 
+# ------------------------------------------------------------------------
+# STARTING POINT
+# ------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
+
+# ------------------------------------------------------------------------

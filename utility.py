@@ -1,6 +1,22 @@
 import numpy as np
 import cv2
-from painting_retrieval import paintings_db, data_csv
+import painting_detection as detect
+import painting_retrieval as retr
+
+
+def init(video_name):
+    video = load_video(video_name)
+
+    print('\n')
+    print("Initializing histogram...")
+    detect.init_histogram()
+    print("Initializing ORB database...")
+    retr.init_database()
+    print("Reading data from CSV file...")
+    retr.read_file()
+    print("Done")
+
+    return video
 
 
 def load_video(video_name):
@@ -62,19 +78,19 @@ def get_retrieved_img(retrieved, ranking=0):
     retr_img = []
     retr_names = retrieved[:, ranking, 0]
     for name in retr_names:
-        img = paintings_db[name]
+        img = retr.paintings_db[name]
         retr_img.append(img)
     return retr_img
 
 
 def print_ranking(retrieved):
     print("\nDatabase matches:")
-    for i, retr in enumerate(retrieved):
+    for i, img_retr in enumerate(retrieved):
         print(f"Painting {i + 1}")
-        for j, match in zip(range(3), retr):
+        for j, match in zip(range(3), img_retr):
             img_name, accuracy = match
             accuracy = round(np.float32(accuracy))
-            title, author, _ = data_csv[img_name]
+            title, author, _ = retr.data_csv[img_name]
             print(f"{j + 1} - {title}, {author}: {accuracy}%")
 
 
@@ -127,6 +143,15 @@ def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
     cv2.namedWindow("Painting Rectification & Retrieval",
                     flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     cv2.imshow("Painting Rectification & Retrieval", cv2.resize(concatenate, None, fx=0.75, fy=0.75))
+
+
+def show_results(block):
+    print("\n-----------------------------------")
+    print("\nFrame", block.n_frame)
+    print("\nROI list:", block.roi_list)
+    print_ranking(block.retrieved)
+    print_room(block.room)
+    draw(block.roi_list, block.cont_list, block.rectified, block.retrieved, block.people_boxes, block.room, block.frame)
 
 
 def skip_frames(video, fps=1):
