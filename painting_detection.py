@@ -14,18 +14,7 @@ def compute_histogram(img):
 
     global stripes
 
-    h, w, _ = img.shape
-
-    ar = w / h
-    dmax = max(h, w)
-    if dmax > 200:
-        if ar < 1:
-            h = int(200)
-            w = int(h * ar)
-        else:
-            w = int(200)
-            h = int(w / ar)
-        img = cv2.resize(img, (w, h))
+    h = img.shape[0]
 
     h_stripe = h // stripes
 
