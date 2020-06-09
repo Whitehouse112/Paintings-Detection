@@ -176,16 +176,8 @@ def contours_refining(frame, contours):
         # Histogram distance
         roi = frame[y:y + h, x:x + w]
         similarity = histogram_distance(roi)
-        # if num_ex < 50:
-        #     if similarity < 0.4:
-        #         continue
-        # else:
-        #     if similarity < 0.6:
-        #         continue
         if similarity < 0.4:
             continue
-
-        # print(similarity)
 
         roi_list.append(box)
         cont_list.append(cont)

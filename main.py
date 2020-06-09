@@ -111,7 +111,7 @@ def peopleThreadBody():
 
 
 def main():
-    video_name = "VIRB0392.MP4"
+    video_name = "GOPR5826.MP4"
     video = util.load_video(video_name)
 
     print('\n')

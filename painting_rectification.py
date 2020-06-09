@@ -42,6 +42,23 @@ def vertices_kmeans(intersections):
     return centers
 
 
+def check_vertices(tl, tr, bl, br, frame_h, frame_w):
+
+    tl[0] = np.clip(tl[0], -200, frame_w)
+    tl[1] = np.clip(tl[1], -200, frame_h)
+
+    tr[0] = np.clip(tr[0], 0, frame_w + 200)
+    tr[1] = np.clip(tr[1], -200, frame_h)
+
+    bl[0] = np.clip(bl[0], -200, frame_w)
+    bl[1] = np.clip(bl[1], 0, frame_h + 200)
+
+    br[0] = np.clip(br[0], 0, frame_w + 200)
+    br[1] = np.clip(br[1], 0, frame_h + 200)
+
+    return tl, tr, bl, br
+
+
 def order_centers(centers):
     dtype = [('x', centers.dtype), ('y', centers.dtype)]
     centers = centers.ravel().view(dtype)
@@ -161,10 +178,11 @@ def rectify_paintings(roi_list, cont_list, frame):
 
         # Ordering vertices
         tl, tr, bl, br = order_centers(vertices)
+        tl, tr, bl, br = check_vertices(tl, tr, bl, br, frame.shape[0], frame.shape[1])
         frame_h, frame_w = frame.shape[0:2]
         hmax, hmin = max(bl[1] - tl[1], br[1] - tr[1]), min(bl[1] - tl[1], br[1] - tr[1])
         wmax, wmin = max(tr[0] - tl[0], br[0] - bl[0]), min(tr[0] - tl[0], br[0] - bl[0])
-        if not(30 <= hmax <= frame_h and 30 <= hmin <= frame_h and 30 <= wmax <= frame_w and 30 <= wmin <= frame_w):
+        if not(50 <= hmax <= frame_h and 50 <= hmin <= frame_h and 50 <= wmax <= frame_w and 50 <= wmin <= frame_w):
             continue
 
         # Compute aspect-ratio
