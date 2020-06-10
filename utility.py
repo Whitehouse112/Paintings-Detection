@@ -2,12 +2,60 @@ import numpy as np
 import cv2
 import painting_detection as detect
 import painting_retrieval as retr
+import argparse
+import time
 
 
-def init(video_name):
-    video = load_video(video_name)
+fps = 1
+time_now = 0
 
-    print('\n')
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-vid', metavar='video_name', help="name of the video to be analyzed")
+    parser.add_argument('-frame', metavar='frame_number', type=int,
+                        help="frame number indicating where to start. Default 0")
+    parser.add_argument('-fps', metavar='fps_number', type=int,
+                        help="number of frame to analyze every second, skipping those in between")
+    args = parser.parse_args()
+
+    video_name = args.vid
+    n_frame = args.frame
+    n_fps = args.fps
+
+    if n_frame is not None and n_frame < 0:
+        print("frame_number must be an integer grater or equal to zero")
+        exit(1)
+
+    if n_fps is not None and n_fps < 1:
+        print("fps_number must be an integer grater or equeal to one")
+        exit(1)
+
+    return video_name, n_frame, n_fps
+
+
+def load_video(video_name, n_frame):
+    path = "videos/"
+    video = cv2.VideoCapture(path + video_name)
+    if not video.isOpened():
+        print("File", path + video_name, "not found.")
+        exit(1)
+    video.set(cv2.CAP_PROP_POS_FRAMES, n_frame)
+    return video
+
+
+def init(default_video, start_frame=0, default_fps=None):
+    global fps
+
+    video_name, n_frame, fps = get_args()
+    if video_name is None:
+        video_name = default_video
+    if n_frame is None:
+        n_frame = start_frame
+    if fps is None:
+        fps = default_fps
+    print("\nLoading video...")
+    video = load_video(video_name, n_frame)
     print("Initializing histogram...")
     detect.init_histogram()
     print("Initializing ORB database...")
@@ -19,13 +67,19 @@ def init(video_name):
     return video
 
 
-def load_video(video_name):
-    path = 'videos/'
-    video = cv2.VideoCapture(path + video_name)
-    if not video.isOpened():
-        print("File", path + video_name, "not found.")
-        exit(1)
-    return video
+def video_end(video):
+    return not video.grab()
+
+
+def get_next_frame(video):
+    global time_now, fps
+
+    time_now = time.time()
+    _, frame = video.retrieve()
+    if fps is not None:
+        video.set(cv2.CAP_PROP_POS_FRAMES,
+                  int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)) / fps)  # correggere bug
+    return frame
 
 
 def resize_images(paintings):
@@ -145,15 +199,18 @@ def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
     cv2.imshow("Painting Rectification & Retrieval", cv2.resize(concatenate, None, fx=0.75, fy=0.75))
 
 
-def show_results(block):
+def show_results(video, frame, roi_list, cont_list, rectified, retrieved, room, people_boxes):
+    global time_now
+    n_frame = int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1
     print("\n-----------------------------------")
-    print("\nFrame", block.n_frame)
-    print("\nROI list:", block.roi_list)
-    print_ranking(block.retrieved)
-    print_room(block.room)
-    draw(block.roi_list, block.cont_list, block.rectified, block.retrieved, block.people_boxes, block.room, block.frame)
+    print("\nFrame", n_frame)
+    print("\nROI list:", roi_list)
+    print_ranking(retrieved)
+    print_room(room)
+    draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
+    print("\nFrame computational time =", time.time() - time_now)
 
 
-def skip_frames(video, fps=1):
-    video.set(cv2.CAP_PROP_POS_FRAMES, int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)) / fps)
-    return video
+def close_all(video):
+    video.release()
+    cv2.destroyAllWindows()

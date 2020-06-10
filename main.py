@@ -9,44 +9,29 @@ import painting_rectification as rect
 import painting_retrieval as retr
 import people_detection as people
 import utility as util
-import time
 
 
 # ------------------------------------------------------------------------
 # MAIN process
 # ------------------------------------------------------------------------
 def main():
-    video_name = "20180206_112930.mp4"
-    video = util.init(video_name)
+    video = util.init("VIRB0392.MP4", start_frame=0, default_fps=2)
 
-    while video.grab():
-        _, frame = video.retrieve()  # (H, W, 3)
+    while not util.video_end(video):
+        frame = util.get_next_frame(video)  # shape = (H, W, 3), colorspace = BGR
 
-        n_frame = int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1
-
-        time_now = time.time()
         roi_list, cont_list = detect.detect_paintings(frame)
         rectified, roi_list, cont_list = rect.rectify_paintings(roi_list, cont_list, frame)
         room, retrieved = retr.retrieve_paintings(rectified)
         people_boxes = people.detect_people(frame, roi_list)
 
-        print("Computational time =", time.time() - time_now)
+        util.show_results(video, frame, roi_list, cont_list, rectified, retrieved, room, people_boxes)
 
-        print("\n-----------------------------------")
-        print("\nFrame", n_frame)
-        print("\nROI list:", roi_list)
-        util.print_ranking(retrieved)
-        util.print_room(room)
-        util.draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
-
-        video = util.skip_frames(video, fps=2)
-        # Delay & escape-key
-        if cv2.waitKey(2) == ord('q'):
+        if cv2.waitKey(1) > 0:  # exit
             break
-        # cv2.waitKey()
+        # cv2.waitKey()  # one frame at a time
 
-    video.release()
-    cv2.destroyAllWindows()
+    util.close_all(video)
 
 
 # ------------------------------------------------------------------------
