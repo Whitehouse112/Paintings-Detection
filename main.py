@@ -15,7 +15,7 @@ import utility as util
 # MAIN process
 # ------------------------------------------------------------------------
 def main():
-    video = util.init("VIRB0392.MP4", start_frame=0, default_fps=2)
+    video = util.init("VIRB0392.MP4", start_frame=0, default_fps=1)
 
     while not util.video_end(video):
         frame = util.get_next_frame(video)  # shape = (H, W, 3), colorspace = BGR
@@ -25,7 +25,7 @@ def main():
         room, retrieved = retr.retrieve_paintings(rectified)
         people_boxes = people.detect_people(frame, roi_list)
 
-        util.show_results(video, frame, roi_list, cont_list, rectified, retrieved, room, people_boxes)
+        util.show_results(frame, roi_list, cont_list, rectified, retrieved, room, people_boxes)
 
         if cv2.waitKey(1) > 0:  # exit
             break

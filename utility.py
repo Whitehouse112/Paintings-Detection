@@ -7,6 +7,7 @@ import time
 
 
 fps = 1
+n_frame = 0
 time_now = 0
 
 
@@ -20,10 +21,10 @@ def get_args():
     args = parser.parse_args()
 
     video_name = args.vid
-    n_frame = args.frame
+    num_frame = args.frame
     n_fps = args.fps
 
-    if n_frame is not None and n_frame < 0:
+    if num_frame is not None and num_frame < 0:
         print("frame_number must be an integer grater or equal to zero")
         exit(1)
 
@@ -34,18 +35,18 @@ def get_args():
     return video_name, n_frame, n_fps
 
 
-def load_video(video_name, n_frame):
+def load_video(video_name, num_frame):
     path = "videos/"
     video = cv2.VideoCapture(path + video_name)
     if not video.isOpened():
         print("File", path + video_name, "not found.")
         exit(1)
-    video.set(cv2.CAP_PROP_POS_FRAMES, n_frame)
+    video.set(cv2.CAP_PROP_POS_FRAMES, num_frame)
     return video
 
 
 def init(default_video, start_frame=0, default_fps=None):
-    global fps
+    global fps, n_frame
 
     video_name, n_frame, fps = get_args()
     if video_name is None:
@@ -72,13 +73,19 @@ def video_end(video):
 
 
 def get_next_frame(video):
-    global time_now, fps
+    global time_now, fps, n_frame
 
     time_now = time.time()
     _, frame = video.retrieve()
+    n_frame = int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1
     if fps is not None:
-        video.set(cv2.CAP_PROP_POS_FRAMES,
-                  int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)) / fps)  # correggere bug
+        go_to = int(video.get(cv2.CAP_PROP_POS_FRAMES)) + int(video.get(cv2.CAP_PROP_FPS)) / fps
+        last = video.get(cv2.CAP_PROP_FRAME_COUNT) - 1
+        if go_to <= last:
+            video.set(cv2.CAP_PROP_POS_FRAMES, go_to)
+        else:
+            video.set(cv2.CAP_PROP_POS_FRAMES, last)
+            video.grab()
     return frame
 
 
@@ -199,16 +206,15 @@ def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
     cv2.imshow("Painting Rectification & Retrieval", cv2.resize(concatenate, None, fx=0.75, fy=0.75))
 
 
-def show_results(video, frame, roi_list, cont_list, rectified, retrieved, room, people_boxes):
-    global time_now
-    n_frame = int(video.get(cv2.CAP_PROP_POS_FRAMES)) - 1
+def show_results(frame, roi_list, cont_list, rectified, retrieved, room, people_boxes):
+    global time_now, n_frame
     print("\n-----------------------------------")
     print("\nFrame", n_frame)
     print("\nROI list:", roi_list)
     print_ranking(retrieved)
     print_room(room)
     draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
-    print("\nFrame computational time =", time.time() - time_now)
+    print("\nFrame computation time =", time.time() - time_now)
 
 
 def close_all(video):
