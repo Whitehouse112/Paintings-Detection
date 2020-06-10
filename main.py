@@ -16,7 +16,7 @@ import time
 # MAIN process
 # ------------------------------------------------------------------------
 def main():
-    video_name = "GOPR5826.MP4"
+    video_name = "20180206_112930.mp4"
     video = util.init(video_name)
 
     while video.grab():
@@ -39,7 +39,7 @@ def main():
         util.print_room(room)
         util.draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame)
 
-        # video = util.skip_frames(video, fps=2)
+        video = util.skip_frames(video, fps=2)
         # Delay & escape-key
         if cv2.waitKey(2) == ord('q'):
             break

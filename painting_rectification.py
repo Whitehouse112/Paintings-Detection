@@ -182,7 +182,12 @@ def rectify_paintings(roi_list, cont_list, frame):
         frame_h, frame_w = frame.shape[0:2]
         hmax, hmin = max(bl[1] - tl[1], br[1] - tr[1]), min(bl[1] - tl[1], br[1] - tr[1])
         wmax, wmin = max(tr[0] - tl[0], br[0] - bl[0]), min(tr[0] - tl[0], br[0] - bl[0])
-        if not(50 <= hmax <= frame_h and 50 <= hmin <= frame_h and 50 <= wmax <= frame_w and 50 <= wmin <= frame_w):
+        if not(100 <= hmax <= frame_h and 100 <= hmin <= frame_h and 100 <= wmax <= frame_w and 100 <= wmin <= frame_w):
+            x, y, w, h = roi_list[idx]
+            img = frame[y:y + h, x:x + w]
+            rectified.append(img)
+            new_roi_list.append(roi_list[idx])
+            new_cont_list.append(cont_list[idx])
             continue
 
         # Compute aspect-ratio
