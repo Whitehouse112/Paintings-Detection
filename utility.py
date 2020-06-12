@@ -5,7 +5,6 @@ import painting_retrieval as retr
 import argparse
 import time
 
-
 fps = 1
 n_frame = 0
 time_now = 0
@@ -13,11 +12,14 @@ time_now = 0
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-vid', metavar='video_name', help="name of the video to be analyzed")
+    parser.add_argument('-vid', metavar='video_name',
+                        help="name of the video to be analyzed. If not present, the 'VIRB0392.MP4' video will be \
+                             analyzed (if present in the '<code-directory>/videos' folder)")
     parser.add_argument('-frame', metavar='frame_number', type=int,
                         help="frame number indicating where to start. Default 0")
     parser.add_argument('-fps', metavar='fps_number', type=int,
-                        help="number of frame to analyze every second, skipping those in between")
+                        help="number of frame to analyze every second, skipping those in between. " +
+                             "If not present, all frames will be analyzed")
     args = parser.parse_args()
 
     video_name = args.vid
@@ -186,7 +188,7 @@ def draw(roi_list, cont_list, rectified, retrieved, people_boxes, room, frame):
     if vertical_concat.shape[0] > 2000:
         fx, fy = 0.45, 0.45
     else:
-        fx, fy = 0.65, 0.65 
+        fx, fy = 0.65, 0.65
     cv2.namedWindow("Detection & Segmentation",
                     flags=cv2.WINDOW_AUTOSIZE | cv2.WINDOW_KEEPRATIO | cv2.WINDOW_GUI_NORMAL)
     cv2.imshow("Detection & Segmentation", cv2.resize(vertical_concat, None, fx=fx, fy=fy))

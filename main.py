@@ -1,8 +1,8 @@
-# ------------------------------------------------------------------------
-# Painting detection project
-# By Lorenzo Cuoghi, Federico Panzani, Lorenzo Rosini
-# (Computer) Vision and Cognitive Systems 2020
-# ------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
+# Final project for (Computer) Vision and Cognitive System 2020
+# Group 10: Lorenzo Cuoghi, Federico Panzani, Lorenzo Rosini
+# Project GitHub repository: https://github.com/Whitehouse112/Paintings-Detection
+# --------------------------------------------------------------------------------------------------
 import cv2
 import painting_detection as detect
 import painting_rectification as rect
@@ -15,7 +15,7 @@ import utility as util
 # MAIN process
 # ------------------------------------------------------------------------
 def main():
-    video = util.init("VIRB0392.MP4", start_frame=0, default_fps=1)
+    video = util.init("VIRB0392.MP4", start_frame=0, default_fps=None)
 
     while not util.video_end(video):
         frame = util.get_next_frame(video)  # shape = (H, W, 3), colorspace = BGR
@@ -40,4 +40,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# ------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------
